@@ -1,0 +1,119 @@
+name: Dev — Integration Tests, Docker Push & Deploy
+
+on:
+  push:
+    branches: [develop]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_PREFIX: ${{ secrets.DOCKERHUB_USERNAME }}/ticket-booking
+  AWS_REGION: eu-west-1
+  ECS_CLUSTER: ticket-booking-dev
+
+jobs:
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: workshop
+          POSTGRES_PASSWORD: workshop123
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Run full test suite (dev profile)
+        run: mvn verify -B -Dspring.profiles.active=dev
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-dev
+          path: '**/target/surefire-reports/'
+
+  docker-build-push:
+    name: Build & Push Docker Images
+    needs: integration-tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service: [show-service, booking-service, payment-service, notification-service]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.service }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.service }}/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:dev
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:dev-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-dev:
+    name: Deploy to AWS ECS (dev)
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service: [show-service, booking-service, payment-service, notification-service]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update ECS task definition image
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ecs/${{ matrix.service }}-task.json
+          container-name: ${{ matrix.service }}
+          image: ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:dev-${{ github.sha }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ matrix.service }}-dev
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true

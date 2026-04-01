@@ -1,0 +1,108 @@
+-- ── Domain tables ─────────────────────────────────────────────────────────────
+
+CREATE TABLE notifications (
+    notification_id   VARCHAR(36)  PRIMARY KEY,
+    booking_id        VARCHAR(36)  NOT NULL,
+    customer_id       VARCHAR(36)  NOT NULL,
+    notification_type VARCHAR(50)  NOT NULL,
+    message           TEXT         NOT NULL,
+    sent_at           TIMESTAMP    NOT NULL DEFAULT NOW(),
+    version           BIGINT
+);
+
+-- ── Axon dead-letter queue ─────────────────────────────────────────────────────
+
+CREATE TABLE dead_letter_entry (
+    dead_letter_id          VARCHAR(255) NOT NULL,
+    cause_message           TEXT,
+    cause_type              VARCHAR(255),
+    diagnostics             TEXT,
+    enqueued_at             TIMESTAMP(6) NOT NULL,
+    last_touched            TIMESTAMP(6),
+    aggregate_identifier    VARCHAR(255),
+    event_identifier        VARCHAR(255),
+    message_type            VARCHAR(255),
+    meta_data               BYTEA,
+    payload                 BYTEA        NOT NULL,
+    payload_revision        VARCHAR(255),
+    payload_type            VARCHAR(255) NOT NULL,
+    sequence_number         BIGINT,
+    time_stamp              VARCHAR(255) NOT NULL,
+    token                   BYTEA,
+    token_type              VARCHAR(255),
+    type                    VARCHAR(255),
+    processing_group        VARCHAR(255) NOT NULL,
+    processing_started      TIMESTAMP(6),
+    sequence_identifier     VARCHAR(255) NOT NULL,
+    sequence_index          BIGINT       NOT NULL,
+    PRIMARY KEY (dead_letter_id)
+);
+
+CREATE INDEX idx_dlq_processing_group ON dead_letter_entry (processing_group);
+CREATE INDEX idx_dlq_sequence         ON dead_letter_entry (processing_group, sequence_identifier);
+
+-- ── Axon token store ───────────────────────────────────────────────────────────
+
+CREATE TABLE token_entry (
+    processor_name  VARCHAR(255) NOT NULL,
+    segment         INT          NOT NULL,
+    owner           VARCHAR(255),
+    timestamp       VARCHAR(255) NOT NULL,
+    token           BYTEA,
+    token_type      VARCHAR(255),
+    PRIMARY KEY (processor_name, segment)
+);
+
+-- ── Axon saga store ────────────────────────────────────────────────────────────
+
+CREATE TABLE saga_entry (
+    saga_id         VARCHAR(255) NOT NULL,
+    revision        VARCHAR(255),
+    saga_type       VARCHAR(255),
+    serialized_saga BYTEA,
+    PRIMARY KEY (saga_id)
+);
+
+CREATE SEQUENCE IF NOT EXISTS association_value_entry_seq START WITH 1 INCREMENT BY 50;
+
+CREATE TABLE association_value_entry (
+    id                BIGINT         NOT NULL DEFAULT nextval('association_value_entry_seq'),
+    association_key   VARCHAR(255) NOT NULL,
+    association_value VARCHAR(255),
+    saga_id           VARCHAR(255),
+    saga_type         VARCHAR(255),
+    PRIMARY KEY (id)
+);
+
+CREATE INDEX idx_assoc_saga_id   ON association_value_entry (saga_id);
+CREATE INDEX idx_assoc_key_value ON association_value_entry (association_key, association_value);
+
+-- ── Axon event store ───────────────────────────────────────────────────────────
+
+CREATE TABLE domain_event_entry (
+    global_index            BIGSERIAL    NOT NULL,
+    aggregate_identifier    VARCHAR(255) NOT NULL,
+    sequence_number         BIGINT       NOT NULL,
+    type                    VARCHAR(255),
+    event_identifier        VARCHAR(255) NOT NULL UNIQUE,
+    meta_data               BYTEA,
+    payload                 BYTEA        NOT NULL,
+    payload_revision        VARCHAR(255),
+    payload_type            VARCHAR(255) NOT NULL,
+    time_stamp              VARCHAR(255) NOT NULL,
+    PRIMARY KEY (global_index),
+    UNIQUE (aggregate_identifier, sequence_number)
+);
+
+CREATE TABLE snapshot_event_entry (
+    aggregate_identifier    VARCHAR(255) NOT NULL,
+    sequence_number         BIGINT       NOT NULL,
+    type                    VARCHAR(255) NOT NULL,
+    event_identifier        VARCHAR(255) NOT NULL UNIQUE,
+    meta_data               BYTEA,
+    payload                 BYTEA        NOT NULL,
+    payload_revision        VARCHAR(255),
+    payload_type            VARCHAR(255) NOT NULL,
+    time_stamp              VARCHAR(255) NOT NULL,
+    PRIMARY KEY (aggregate_identifier, sequence_number)
+);

@@ -1,0 +1,1908 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>TicketBox</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg:           #06060f;
+            --surface:      #0d0d1a;
+            --surface-2:    #13132a;
+            --border:       rgba(255,255,255,0.07);
+            --border-hover: rgba(255,255,255,0.14);
+            --text:         #e2e8f0;
+            --text-muted:   #64748b;
+            --accent:       #f59e0b;
+            --accent-dim:   rgba(245,158,11,0.12);
+            --accent-hover: #fbbf24;
+            --radius:       12px;
+            --radius-sm:    8px;
+            /* Category palette */
+            --cat-CONCERT:  #7c3aed;
+            --cat-THEATRE:  #dc2626;
+            --cat-SPORTS:   #16a34a;
+            --cat-COMEDY:   #d97706;
+            --cat-CINEMA:   #2563eb;
+            --cat-FESTIVAL: #db2777;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+        /* ── Navbar ── */
+        .tb-nav {
+            background: rgba(6,6,15,0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: .65rem 1.5rem;
+            position: sticky; top: 0; z-index: 1000;
+            display: flex; align-items: center; gap: 1.5rem;
+        }
+        .tb-brand {
+            font-size: 1.1rem; font-weight: 700; color: #fff;
+            text-decoration: none; letter-spacing: -.3px;
+            display: flex; align-items: center; gap: .5rem; flex-shrink: 0;
+        }
+        .tb-brand span { color: var(--accent); }
+        .tb-brand-icon {
+            background: linear-gradient(135deg, #92400e, #f59e0b);
+            border-radius: 8px; width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center; font-size: .95rem;
+        }
+        .tb-health { display: flex; gap: 1rem; align-items: center; flex: 1; }
+        .health-dot {
+            display: flex; align-items: center; gap: .35rem;
+            font-size: .72rem; color: var(--text-muted); white-space: nowrap;
+        }
+        .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+        .dot-UP      { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,.5); }
+        .dot-DOWN    { background: #ef4444; }
+        .dot-CB_OPEN { background: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,.5); }
+        .dot-CB_HALF { background: #60a5fa; box-shadow: 0 0 6px rgba(96,165,250,.5); }
+        .dlq-panel { margin-top: .75rem; }
+        .dlq-row { display: flex; align-items: center; justify-content: space-between;
+                   padding: .3rem 0; border-bottom: 1px solid var(--border); font-size: .78rem; }
+        .dlq-row:last-child { border-bottom: none; }
+        .dlq-count { font-weight: 700; }
+        .dlq-count.warn { color: #f59e0b; }
+        .dlq-count.ok   { color: var(--text-muted); }
+        .tb-user {
+            display: flex; align-items: center; gap: .65rem; margin-left: auto; flex-shrink: 0;
+        }
+        .tb-username { font-size: .85rem; color: var(--text-muted); }
+        .tb-role-badge {
+            font-size: .68rem; font-weight: 600; padding: .15rem .55rem;
+            border-radius: 20px; text-transform: uppercase; letter-spacing: .4px;
+        }
+        .role-ADMIN    { background: rgba(245,158,11,.15); color: var(--accent); }
+        .role-CUSTOMER { background: rgba(37,99,235,.15);  color: #60a5fa; }
+        .refresh-info { font-size: .75rem; color: var(--text-muted); white-space: nowrap; }
+        .btn-logout {
+            background: rgba(255,255,255,.06); border: 1px solid var(--border);
+            color: var(--text-muted); font-size: .78rem; padding: .3rem .75rem;
+            border-radius: 8px; cursor: pointer; transition: all .2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-logout:hover { background: rgba(255,255,255,.1); color: var(--text); }
+
+        /* ── Sections ── */
+        .section-hd {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+        .section-label {
+            font-size: .65rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--accent); margin-bottom: .2rem;
+        }
+        .section-title {
+            font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0;
+        }
+        .tb-divider { border-color: var(--border); margin: 2.5rem 0; }
+
+        /* ── Cards ── */
+        .tb-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+        .tb-card:hover { border-color: var(--border-hover); }
+
+        /* ── Buttons ── */
+        .btn-gold {
+            background: linear-gradient(135deg, #d97706, #f59e0b);
+            border: none; color: #000; font-weight: 600;
+            border-radius: var(--radius-sm); padding: .45rem 1rem;
+            font-size: .85rem; transition: all .2s; font-family: 'Inter', sans-serif;
+        }
+        .btn-gold:hover { background: linear-gradient(135deg, #f59e0b, #fbbf24); box-shadow: 0 4px 16px rgba(245,158,11,.3); }
+        .btn-ghost {
+            background: rgba(255,255,255,.05); border: 1px solid var(--border);
+            color: var(--text-muted); font-size: .8rem; padding: .35rem .75rem;
+            border-radius: var(--radius-sm); transition: all .2s; font-family: 'Inter', sans-serif;
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,.09); color: var(--text); }
+        .btn-danger-soft {
+            background: rgba(220,38,38,.1); border: 1px solid rgba(220,38,38,.2);
+            color: #f87171; font-size: .78rem; padding: .3rem .7rem;
+            border-radius: 6px; transition: all .2s; font-family: 'Inter', sans-serif;
+        }
+        .btn-danger-soft:hover { background: rgba(220,38,38,.2); }
+        .btn-confirm {
+            background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.25);
+            color: #4ade80; font-size: .8rem; padding: .3rem .5rem;
+            border-radius: 6px; transition: all .2s; font-family: 'Inter', sans-serif;
+        }
+        .btn-confirm:hover { background: rgba(34,197,94,.2); }
+        .btn-refund {
+            background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.25);
+            color: var(--accent); font-size: .8rem; padding: .3rem .5rem;
+            border-radius: 6px; transition: all .2s; font-family: 'Inter', sans-serif;
+        }
+        .btn-refund:hover { background: rgba(245,158,11,.2); }
+
+        /* ── Show cards ── */
+        .show-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: transform .2s, border-color .2s, box-shadow .2s;
+            display: flex; flex-direction: column; height: 100%;
+        }
+        .show-card:hover { transform: translateY(-2px); border-color: var(--border-hover); box-shadow: 0 8px 32px rgba(0,0,0,.4); }
+        .show-card.cancelled-card { opacity: .45; }
+        .show-banner {
+            padding: 1rem 1.1rem .85rem;
+            display: flex; align-items: flex-start; justify-content: space-between;
+            min-height: 72px; position: relative;
+        }
+        .show-banner-left { display: flex; align-items: center; gap: .5rem; }
+        .cat-icon { font-size: 1.3rem; line-height: 1; }
+        .cat-name {
+            font-size: .68rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: .8px; opacity: .85; color: #fff;
+        }
+        .avail-chip {
+            font-size: .68rem; font-weight: 600; padding: .2rem .55rem;
+            border-radius: 20px; background: rgba(0,0,0,.35);
+            color: #fff; letter-spacing: .2px; white-space: nowrap;
+        }
+        .avail-chip.sold-out { background: rgba(220,38,38,.35); }
+        .avail-chip.low      { background: rgba(245,158,11,.35); }
+        /* Category gradient banners */
+        .cat-CONCERT  { background: linear-gradient(135deg, #3b0764 0%, #7c3aed 100%); }
+        .cat-THEATRE  { background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%); }
+        .cat-SPORTS   { background: linear-gradient(135deg, #14532d 0%, #16a34a 100%); }
+        .cat-COMEDY   { background: linear-gradient(135deg, #78350f 0%, #d97706 100%); }
+        .cat-CINEMA   { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); }
+        .cat-FESTIVAL { background: linear-gradient(135deg, #831843 0%, #db2777 100%); }
+        .cat-DEFAULT  { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
+        .show-body { padding: 1rem 1.1rem .75rem; flex: 1; }
+        .show-title-text { font-size: 1rem; font-weight: 700; color: #fff; margin: 0 0 .15rem; line-height: 1.3; }
+        .show-artist { font-size: .8rem; color: var(--text-muted); margin: 0 0 .65rem; }
+        .show-meta-row { display: flex; align-items: center; gap: .4rem; font-size: .78rem; color: var(--text-muted); margin-bottom: .3rem; }
+        .show-meta-row .bi { font-size: .75rem; color: var(--accent); }
+        .show-desc { font-size: .75rem; color: var(--text-muted); margin-top: .5rem; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .show-footer {
+            padding: .65rem 1.1rem; border-top: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .price-tag { font-size: 1.05rem; font-weight: 700; color: var(--accent); }
+        .show-id-tag { font-size: .65rem; color: var(--text-muted); font-family: monospace; }
+
+        /* ── Metrics ── */
+        .metric-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: .85rem 1rem; text-align: center;
+        }
+        .metric-val { font-size: 1.4rem; font-weight: 700; color: #fff; line-height: 1.1; }
+        .metric-lbl { font-size: .72rem; color: var(--text-muted); margin-top: .15rem; }
+
+        /* ── Form ── */
+        .form-label { font-size: .75rem; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: .35rem; }
+        .form-control, .form-select {
+            background: rgba(255,255,255,.04) !important;
+            border: 1px solid var(--border) !important;
+            color: var(--text) !important;
+            border-radius: var(--radius-sm) !important;
+            padding: .6rem .85rem !important;
+            font-size: .875rem !important;
+            font-family: 'Inter', sans-serif !important;
+            transition: border-color .2s, box-shadow .2s !important;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 0 3px rgba(245,158,11,.1) !important;
+            background: rgba(255,255,255,.06) !important;
+        }
+        .form-control::placeholder { color: var(--text-muted) !important; }
+        .form-control[readonly] { opacity: .7 !important; cursor: default !important; }
+        .form-select option { background: #1a1a2e; color: var(--text); }
+        textarea.form-control { resize: vertical; }
+        .input-group-text {
+            background: rgba(255,255,255,.06) !important;
+            border: 1px solid var(--border) !important;
+            color: var(--text-muted) !important;
+            font-size: .9rem !important;
+        }
+
+        /* ── Seat map ── */
+        .seat-map { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; }
+        .seat-map .screen {
+            background: linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,.03) 100%);
+            height: 6px; border-radius: 3px; margin-bottom: 1rem;
+            position: relative; overflow: visible;
+        }
+        .seat-map .screen::after { content: 'STAGE'; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: .55rem; letter-spacing: 2px; color: var(--text-muted); }
+        .seat-row { display: flex; align-items: center; justify-content: center; gap: 3px; margin-bottom: 3px; }
+        .row-label { font-size: .6rem; font-weight: 700; color: var(--text-muted); width: 14px; text-align: center; flex-shrink: 0; }
+        .seat {
+            width: 24px; height: 22px; border-radius: 4px 4px 2px 2px;
+            border: 1px solid rgba(255,255,255,.1); font-size: .58rem; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: transform .1s, background .15s;
+        }
+        .seat:hover:not(.seat-taken):not(.seat-selected) { transform: scale(1.15); background: rgba(245,158,11,.35); border-color: var(--accent); color: var(--accent); }
+        .seat-free     { background: rgba(52,211,153,.18); border-color: rgba(52,211,153,.45); color: rgba(52,211,153,.9); }
+        .seat-taken    { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.3); color: rgba(239,68,68,.45); cursor: not-allowed; }
+        .seat-selected { background: var(--accent); color: #000; border-color: var(--accent-hover); box-shadow: 0 0 8px rgba(245,158,11,.5); }
+        .seat-legend   { display: flex; gap: 1rem; font-size: .68rem; color: var(--text-muted); margin-top: .75rem; flex-wrap: wrap; }
+        .seat-legend span { display: flex; align-items: center; gap: .3rem; }
+        /* Multi-seat chips */
+        .seats-chips-box {
+            display: flex; flex-wrap: wrap; gap: .4rem;
+            min-height: 34px; padding: .35rem .6rem;
+            background: rgba(255,255,255,.04); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); align-items: center;
+        }
+        .selected-chip {
+            display: inline-flex; align-items: center; gap: .35rem;
+            background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.3);
+            border-radius: 5px; padding: .1rem .5rem;
+            font-size: .75rem; font-family: monospace; font-weight: 700; color: var(--accent);
+        }
+        .selected-chip button {
+            background: none; border: none; color: #f87171; cursor: pointer;
+            padding: 0; font-size: .75rem; line-height: 1; margin-left: .1rem;
+        }
+        .selected-chip button:hover { color: #ef4444; }
+        /* Zone seat colours */
+        .seat-zone-0 { background: rgba(245,158,11,.22); border-color: rgba(245,158,11,.55); color: rgba(245,158,11,.9); }
+        .seat-zone-1 { background: rgba(59,130,246,.18); border-color: rgba(59,130,246,.45); color: rgba(59,130,246,.9); }
+        .seat-zone-2 { background: rgba(52,211,153,.18); border-color: rgba(52,211,153,.45); color: rgba(52,211,153,.9); }
+        .seat-zone-0:hover:not(.seat-taken):not(.seat-selected) { background: rgba(245,158,11,.35); border-color: var(--accent); }
+        .seat-zone-1:hover:not(.seat-taken):not(.seat-selected) { background: rgba(59,130,246,.35); border-color: #3b82f6; }
+        .seat-zone-2:hover:not(.seat-taken):not(.seat-selected) { background: rgba(52,211,153,.35); border-color: #34d399; }
+        /* Zone builder rows */
+        .zone-row { display: flex; gap: .5rem; align-items: center; margin-bottom: .4rem; }
+        .zone-row .zone-label-input { flex: 0 0 88px; }
+        .zone-row .zone-row-input   { flex: 0 0 66px; }
+        .zone-row .zone-price-input { flex: 1; }
+        .zone-header { display: flex; gap: .5rem; align-items: center; margin-bottom: .3rem; }
+        .zone-header span { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+        .zone-header .zh-dot   { width: 10px; flex-shrink: 0; }
+        .zone-header .zh-label { flex: 0 0 88px; }
+        .zone-header .zh-row   { flex: 0 0 66px; }
+        .zone-header .zh-price { flex: 1; padding-left: 2rem; }
+        .leg-box { width: 13px; height: 12px; border-radius: 3px 3px 1px 1px; border: 1px solid rgba(255,255,255,.1); display: inline-block; }
+
+        /* ── Flatpickr overrides ── */
+        .flatpickr-calendar { font-size: .75rem !important; width: 224px !important; }
+        .flatpickr-months { padding: .25rem 0; }
+        .flatpickr-month { height: 28px !important; }
+        .flatpickr-current-month { font-size: .8rem !important; padding-top: .2rem !important; }
+        .flatpickr-current-month .numInputWrapper { width: 52px !important; }
+        .flatpickr-weekdays { height: 22px !important; }
+        span.flatpickr-weekday { font-size: .68rem !important; line-height: 22px !important; }
+        .flatpickr-day { height: 26px !important; line-height: 26px !important; max-width: 26px !important; font-size: .72rem !important; }
+        .flatpickr-time { height: 36px !important; }
+        .flatpickr-time input { font-size: .78rem !important; }
+        .flatpickr-time .flatpickr-time-separator { line-height: 36px !important; }
+
+        /* ── Status badges ── */
+        .status-badge {
+            display: inline-flex; align-items: center; gap: .3rem;
+            font-size: .7rem; font-weight: 600; padding: .2rem .6rem;
+            border-radius: 20px; letter-spacing: .2px; white-space: nowrap;
+        }
+        .status-INITIATED,.status-REQUESTED  { background: rgba(245,158,11,.12); color: #fbbf24; }
+        .status-CONFIRMED                    { background: rgba(37,99,235,.12);   color: #60a5fa; }
+        .status-TICKET_ISSUED                { background: rgba(34,197,94,.12);   color: #4ade80; }
+        .status-CANCELLED,.status-FAILED     { background: rgba(220,38,38,.12);   color: #f87171; }
+        .status-REFUNDED                     { background: rgba(245,158,11,.1);   color: var(--accent); }
+        .status-ACTIVE                       { background: rgba(34,197,94,.12);   color: #4ade80; }
+
+        /* ── Bookings table ── */
+        .bookings-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+        .bookings-table thead th {
+            font-size: .66rem; font-weight: 600; text-transform: uppercase; letter-spacing: .6px;
+            color: var(--text-muted); padding: .55rem .6rem; border-bottom: 1px solid var(--border);
+            white-space: nowrap; background: var(--surface); overflow: hidden;
+        }
+        .bookings-table thead th:first-child { border-radius: var(--radius-sm) 0 0 0; }
+        .bookings-table thead th:last-child  { border-radius: 0 var(--radius-sm) 0 0; }
+        .bookings-table tbody tr { transition: background .15s; }
+        .bookings-table tbody tr:hover td { background: rgba(255,255,255,.02); }
+        .bookings-table tbody td {
+            padding: .55rem .6rem; font-size: .8rem;
+            border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle;
+            overflow: hidden;
+        }
+        /* column widths — total ≈ 692px, fits col-lg-8 inside container-xl */
+        .bookings-table col.col-ref      { width: 60px; }
+        .bookings-table col.col-event    { width: 82px; }
+        .bookings-table col.col-seats    { width: 88px; }
+        .bookings-table col.col-customer { width: 88px; }
+        .bookings-table col.col-total    { width: 58px; }
+        .bookings-table col.col-status   { width: 115px; }
+        .bookings-table col.col-ticket   { width: 88px; }
+        .bookings-table col.col-payment  { width: 60px; }
+        .bookings-table col.col-actions  { width: 72px; }
+        .booking-ref { font-family: 'Courier New', monospace; font-size: .78rem; font-weight: 700; color: var(--accent); }
+        .show-title-cell { font-weight: 600; color: #fff; }
+        .seat-chip {
+            display: inline-block; background: rgba(255,255,255,.08); border: 1px solid var(--border);
+            border-radius: 4px; padding: .1rem .4rem; font-size: .7rem; font-weight: 700;
+            font-family: monospace; color: var(--text); margin-left: .35rem;
+        }
+        .ticket-chip {
+            display: inline-flex; align-items: center; gap: .3rem;
+            background: rgba(168,85,247,.1); border: 1px solid rgba(168,85,247,.25);
+            border-radius: 6px; padding: .2rem .5rem; font-size: .7rem;
+            font-family: monospace; color: #c084fc;
+        }
+        .saga-running { font-size: .75rem; color: var(--text-muted); font-style: italic; }
+
+        /* ── Notifications ── */
+        .notif-feed { display: flex; flex-direction: column; gap: .5rem; }
+        .notif-item {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: .75rem 1rem;
+            border-left-width: 3px !important;
+            transition: border-color .2s;
+        }
+        .notif-item.TICKET_ISSUED     { border-left-color: #22c55e !important; }
+        .notif-item.BOOKING_CONFIRMED { border-left-color: #3b82f6 !important; }
+        .notif-item.BOOKING_CANCELLED { border-left-color: #ef4444 !important; }
+        .notif-item.PAYMENT_REFUNDED  { border-left-color: #f59e0b !important; }
+        .notif-type {
+            font-size: .65rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .7px; margin-bottom: .2rem;
+        }
+        .notif-msg { font-size: .82rem; color: var(--text); }
+        .notif-meta { font-size: .7rem; color: var(--text-muted); margin-top: .2rem; }
+
+        /* ── SSE badge ── */
+        .sse-dot {
+            width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted);
+            display: inline-block; margin-right: .3rem;
+        }
+        .sse-dot.live { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,.6); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { display: inline-block; animation: spin .6s linear; }
+
+        /* ── Modal ── */
+        .modal-content {
+            background: var(--surface) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: var(--radius) !important;
+            color: var(--text) !important;
+        }
+        .modal-header {
+            border-bottom: 1px solid var(--border) !important;
+            padding: 1.1rem 1.4rem !important;
+        }
+        .modal-title { font-weight: 700; font-size: 1rem; }
+        .modal-footer { border-top: 1px solid var(--border) !important; padding: .85rem 1.4rem !important; }
+        .btn-close { filter: invert(1) !important; }
+
+        /* ── Toast ── */
+        .tb-toast {
+            position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999;
+            min-width: 280px; max-width: 380px;
+            background: var(--surface-2); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: .8rem 1rem;
+            display: none; box-shadow: 0 8px 32px rgba(0,0,0,.5);
+        }
+        .tb-toast.show { display: flex; align-items: center; gap: .75rem; animation: fadeIn .2s; }
+        .tb-toast-bar { width: 4px; border-radius: 2px; align-self: stretch; flex-shrink: 0; }
+        .toast-success .tb-toast-bar { background: #22c55e; }
+        .toast-danger  .tb-toast-bar { background: #ef4444; }
+        .toast-warning .tb-toast-bar { background: var(--accent); }
+        .toast-info    .tb-toast-bar { background: #60a5fa; }
+        .tb-toast-msg { font-size: .85rem; flex: 1; }
+        .tb-toast-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+        .font-mono { font-family: 'Courier New', monospace; }
+        .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+        .empty-state .bi { font-size: 2.5rem; opacity: .3; margin-bottom: .75rem; display: block; }
+        .empty-state p { font-size: .875rem; margin: 0; }
+
+        /* ── Occupancy bar ── */
+        .occ-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: .4rem; overflow: hidden; }
+        .occ-fill { height: 100%; border-radius: 2px; transition: width .4s; }
+        .occ-fill.low  { background: #22c55e; }
+        .occ-fill.mid  { background: #f59e0b; }
+        .occ-fill.high { background: #ef4444; }
+        .occ-label { font-size: .68rem; color: var(--text-muted); }
+
+        /* ── Booking detail modal ── */
+        .detail-section { margin-bottom: 1.25rem; }
+        .detail-section h6 { font-size: .7rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: .8px; color: var(--accent); margin-bottom: .6rem; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem .75rem; }
+        .detail-kv { display: flex; flex-direction: column; }
+        .detail-k { font-size: .68rem; color: var(--text-muted); margin-bottom: .1rem; }
+        .detail-v { font-size: .82rem; color: var(--text); font-weight: 500; }
+
+        /* ── Event inspector timeline ── */
+        .timeline { position: relative; padding-left: 1.5rem; }
+        .timeline::before { content:''; position:absolute; left:.55rem; top:0; bottom:0; width:2px; background:var(--border); }
+        .tl-item { position: relative; margin-bottom: .85rem; }
+        .tl-dot { position:absolute; left:-1.25rem; top:.25rem; width:9px; height:9px;
+                  border-radius:50%; border:2px solid var(--surface); background:var(--accent); }
+        .tl-type { font-size: .75rem; font-weight: 600; color: var(--accent); }
+        .tl-ts   { font-size: .65rem; color: var(--text-muted); }
+        .tl-payload { font-size: .72rem; color: var(--text-muted); font-family: monospace;
+                      white-space: pre-wrap; word-break: break-all;
+                      background: rgba(255,255,255,.03); border-radius: 4px;
+                      padding: .35rem .5rem; margin-top: .25rem; display: none; }
+        .tl-item.open .tl-payload { display: block; }
+        .tl-toggle { cursor:pointer; user-select:none; }
+    </style>
+</head>
+<body>
+
+<!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
+<nav class="tb-nav">
+    <a class="tb-brand" href="/">
+        <div class="tb-brand-icon">🎟️</div>
+        Ticket<span>Box</span>
+    </a>
+    <div class="tb-health" id="health-bar"></div>
+    <div class="tb-user" id="user-info" style="display:none">
+        <span class="refresh-info">
+            <i class="bi bi-arrow-clockwise me-1" id="refresh-icon"></i>
+            <strong id="refresh-countdown">3</strong>s
+        </span>
+        <span class="tb-username" id="nav-username"></span>
+        <span class="tb-role-badge" id="nav-role-badge"></span>
+        <button class="btn-logout" onclick="logout()">
+            <i class="bi bi-box-arrow-right me-1"></i>Sign Out
+        </button>
+    </div>
+</nav>
+
+<div class="container-xl py-4 px-3 px-lg-4 pb-5">
+
+    <!-- ── Shows ──────────────────────────────────────────────────────────── -->
+    <div class="section-hd">
+        <div>
+            <div class="section-label">Live Events</div>
+            <h2 class="section-title">Upcoming Shows</h2>
+        </div>
+        <button class="btn-gold admin-only" style="display:none" data-bs-toggle="modal" data-bs-target="#showModal">
+            <i class="bi bi-plus-lg me-1"></i>Add Show
+        </button>
+    </div>
+    <div id="shows-grid" class="row g-3 mb-2">
+        <div class="col-12"><div class="empty-state"><i class="bi bi-hourglass-split"></i><p>Loading events…</p></div></div>
+    </div>
+
+    <hr class="tb-divider"/>
+
+    <!-- ── Booking + Bookings ─────────────────────────────────────────────── -->
+    <div class="row g-4">
+
+        <!-- Form -->
+        <div class="col-lg-4">
+            <div class="section-hd mb-3">
+                <div>
+                    <div class="section-label">Reserve</div>
+                    <h2 class="section-title">Book a Ticket</h2>
+                </div>
+            </div>
+            <div class="tb-card p-3">
+                <form id="booking-form" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label">Show</label>
+                        <select class="form-select" id="f-show" required>
+                            <option value="">Select an event…</option>
+                        </select>
+                    </div>
+                    <div id="seat-map-wrap" class="mb-3" style="display:none">
+                        <div class="seat-map">
+                            <div class="screen"></div>
+                            <div id="seat-grid"></div>
+                            <div class="seat-legend">
+                                <span><span class="leg-box" style="background:rgba(52,211,153,.18);border-color:rgba(52,211,153,.45)"></span>Available</span>
+                                <span><span class="leg-box" style="background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3)"></span>Taken</span>
+                                <span><span class="leg-box" style="background:var(--accent);border-color:var(--accent-hover)"></span>Selected</span>
+                            </div>
+                        </div>
+                        <div class="mt-2" style="font-size:.72rem;color:var(--text-muted)"><i class="bi bi-info-circle me-1"></i>Click seats to select — up to <strong id="max-seats-label">5</strong> per booking</div>
+                    </div>
+                    <div class="mb-3" id="selected-seats-wrap" style="display:none">
+                        <label class="form-label">Selected Seats <span id="seats-count-label" style="color:var(--text-muted);font-weight:400">(0 / 5)</span></label>
+                        <div class="seats-chips-box" id="selected-seats-chips">
+                            <span style="color:var(--text-muted);font-size:.78rem;font-style:italic">Click seats on the map above…</span>
+                        </div>
+                    </div>
+                    <div class="mb-3" id="total-wrap" style="display:none">
+                        <label class="form-label">Order Total</label>
+                        <div class="input-group">
+                            <span class="input-group-text">£</span>
+                            <input type="number" class="form-control" id="f-amount" step="0.01" readonly/>
+                        </div>
+                    </div>
+                    <div class="mb-4 admin-only" id="f-customer-wrap">
+                        <label class="form-label">Customer</label>
+                        <select class="form-select" id="f-customer">
+                            <option value="">Select a customer…</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-gold w-100" style="padding:.7rem" id="btn-confirm-booking" disabled>
+                        <i class="bi bi-check2-circle me-2"></i>Confirm Booking
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Bookings -->
+        <div class="col-lg-8">
+            <div class="section-hd mb-3">
+                <div>
+                    <div class="section-label">History</div>
+                    <h2 class="section-title">Bookings &amp; Payments</h2>
+                </div>
+            </div>
+
+            <!-- Metrics (admin) -->
+            <div id="metrics-strip" class="admin-only row g-2 mb-3" style="display:none">
+                <div class="col-6 col-md-3">
+                    <div class="metric-card">
+                        <div class="metric-val" id="m-total">—</div>
+                        <div class="metric-lbl">Total Bookings</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="metric-card" style="border-color:rgba(34,197,94,.2)">
+                        <div class="metric-val" style="color:#4ade80" id="m-issued">—</div>
+                        <div class="metric-lbl">Tickets Issued</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="metric-card" style="border-color:rgba(220,38,38,.2)">
+                        <div class="metric-val" style="color:#f87171" id="m-cancelled">—</div>
+                        <div class="metric-lbl">Cancelled</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="metric-card" style="border-color:rgba(245,158,11,.2)">
+                        <div class="metric-val" style="color:var(--accent)" id="m-revenue">—</div>
+                        <div class="metric-lbl">Revenue</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DLQ depth panel (admin) -->
+            <div class="admin-only tb-card p-3 mb-3" id="dlq-card" style="display:none">
+                <div class="mb-2" style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--accent)">
+                    <i class="bi bi-exclamation-triangle me-1"></i>Dead Letter Queue Depth
+                </div>
+                <div class="dlq-panel" id="dlq-panel">
+                    <div class="dlq-row"><span style="color:var(--text-muted)">Loading…</span></div>
+                </div>
+            </div>
+
+            <!-- Chaos mode toggle (admin) -->
+            <div class="admin-only tb-card p-3 mb-3" id="chaos-card" style="display:none">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:#ef4444">
+                            <i class="bi bi-radioactive me-1"></i>Payment Chaos Mode
+                        </div>
+                        <div id="chaos-status" style="font-size:.78rem;color:var(--text-muted);margin-top:.2rem">Loading…</div>
+                    </div>
+                    <button id="chaos-btn" class="btn-gold" style="background:rgba(239,68,68,.15);color:#ef4444;border-color:rgba(239,68,68,.3)"
+                            onclick="toggleChaos()">
+                        <i class="bi bi-toggle-off me-1" id="chaos-icon"></i><span id="chaos-btn-label">Enable</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="bookings-area">
+                <div class="empty-state"><i class="bi bi-ticket-perforated"></i><p>No bookings yet — create one on the left.</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Notifications ──────────────────────────────────────────────────── -->
+    <hr class="tb-divider"/>
+    <div class="section-hd mb-3">
+        <div>
+            <div class="section-label">Activity</div>
+            <h2 class="section-title">
+                <i class="bi bi-bell me-2" style="color:var(--accent)"></i>Notifications
+            </h2>
+        </div>
+        <span style="font-size:.78rem;color:var(--text-muted)">
+            <span class="sse-dot" id="sse-dot"></span><span id="sse-label">SSE</span>
+        </span>
+    </div>
+    <div id="notifications-area">
+        <div class="empty-state"><i class="bi bi-bell-slash"></i><p>No notifications yet.</p></div>
+    </div>
+
+    <!-- ── Event Store Inspector (admin) ─────────────────────────────────── -->
+    <div class="admin-only" id="inspector-section" style="display:none">
+        <hr class="tb-divider"/>
+        <div class="section-hd mb-3">
+            <div>
+                <div class="section-label">Debug</div>
+                <h2 class="section-title"><i class="bi bi-database me-2" style="color:var(--accent)"></i>Event Store Inspector</h2>
+            </div>
+        </div>
+        <div class="tb-card p-3">
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-auto">
+                    <label class="form-label">Aggregate</label>
+                    <select class="form-select form-select-sm" id="insp-type" style="width:140px">
+                        <option value="booking">Booking</option>
+                        <option value="show">Show</option>
+                    </select>
+                </div>
+                <div class="col">
+                    <label class="form-label">Aggregate ID</label>
+                    <input class="form-control form-control-sm font-mono" id="insp-id" placeholder="paste UUID…"/>
+                </div>
+                <div class="col-auto">
+                    <button class="btn-gold" onclick="inspectEvents()"><i class="bi bi-search me-1"></i>Inspect</button>
+                </div>
+            </div>
+            <div id="insp-timeline" style="min-height:2rem"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── Create Show Modal ──────────────────────────────────────────────────── -->
+<div class="modal fade" id="showModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-calendar-plus me-2" style="color:var(--accent)"></i>Create New Show</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">Title *</label>
+                        <input class="form-control" id="m-title" placeholder="e.g. Hamilton"/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" id="m-category">
+                            <option value="">— Select —</option>
+                            <option value="CONCERT">🎵 Concert</option>
+                            <option value="THEATRE">🎭 Theatre</option>
+                            <option value="SPORTS">⚽ Sports</option>
+                            <option value="COMEDY">😂 Comedy</option>
+                            <option value="CINEMA">🎬 Cinema</option>
+                            <option value="FESTIVAL">🎪 Festival</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Artist / Performer</label>
+                        <input class="form-control" id="m-artist" placeholder="e.g. Lin-Manuel Miranda"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Venue *</label>
+                        <select class="form-select" id="m-venue">
+                            <option value="">— Select a venue —</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="m-description" rows="2" placeholder="Short event description…"></textarea>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Total Seats *</label>
+                        <input type="number" class="form-control" id="m-seats" value="50" min="1"/>
+                        <div id="m-seats-hint" class="mt-1" style="display:none;font-size:.72rem;color:var(--text-muted)">
+                            <i class="bi bi-info-circle me-1"></i>Pre-filled from venue — override if needed
+                        </div>
+                    </div>
+                    <div class="col-md-3" id="m-price-wrap">
+                        <label class="form-label">Flat Price</label>
+                        <div class="input-group">
+                            <span class="input-group-text">£</span>
+                            <input type="number" class="form-control" id="m-price" value="" step="0.01" placeholder="e.g. 75.00"/>
+                        </div>
+                        <div class="mt-1" style="font-size:.72rem;color:var(--text-muted)">Leave blank if using zones</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Duration (min)</label>
+                        <input type="number" class="form-control" id="m-duration" placeholder="e.g. 120" min="1"/>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Event Date &amp; Time *</label>
+                        <input type="text" class="form-control" id="m-event-date" placeholder="Select date &amp; time" readonly style="cursor:pointer"/>
+                    </div>
+                    <div class="col-12">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label mb-0">Price Zones <span style="color:var(--text-muted);font-weight:400">(optional — up to 3)</span></label>
+                            <button type="button" class="btn-ghost" style="padding:.25rem .75rem;font-size:.8rem" id="btn-add-zone" onclick="addZoneRow()" disabled>
+                                <i class="bi bi-plus me-1"></i>Add Zone
+                            </button>
+                        </div>
+                        <div class="zone-header" id="m-zones-header" style="display:none">
+                            <span class="zh-dot"></span>
+                            <span class="zh-label">Zone</span>
+                            <span class="zh-row">From</span>
+                            <span class="zh-row">To</span>
+                            <span class="zh-price">Price</span>
+                        </div>
+                        <div id="m-zones-list"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn-gold" id="btn-create-show">
+                    <i class="bi bi-plus-lg me-1"></i>Create Show
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Booking Detail Modal ───────────────────────────────────────────────── -->
+<div class="modal fade" id="bookingDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-ticket-perforated me-2" style="color:var(--accent)"></i>Booking Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="booking-detail-body">
+                <div class="empty-state"><i class="bi bi-hourglass-split"></i><p>Loading…</p></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Show Occupancy Modal ────────────────────────────────────────────────── -->
+<div class="modal fade" id="occupancyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="occ-modal-title"><i class="bi bi-grid me-2" style="color:var(--accent)"></i>Seat Map</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3 mb-3" id="occ-stats"></div>
+                <div class="seat-map">
+                    <div class="screen"></div>
+                    <div id="occ-seat-grid"></div>
+                    <div class="seat-legend">
+                        <span><span class="leg-box" style="background:rgba(52,211,153,.18);border-color:rgba(52,211,153,.45)"></span>Available</span>
+                        <span><span class="leg-box" style="background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3)"></span>Reserved</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Amend Booking Modal ────────────────────────────────────────────────── -->
+<div class="modal fade" id="amendModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil-square me-2" style="color:var(--accent)"></i>Amend Booking</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p style="font-size:.82rem;color:var(--text-muted)">Replace seat selections while the booking is in <strong>INITIATED</strong> state. Current seats will be released and new ones reserved.</p>
+                <input type="hidden" id="amend-booking-id"/>
+                <div id="amend-seats-wrap">
+                    <!-- rows added dynamically -->
+                </div>
+                <button class="btn-ghost mt-2" onclick="addAmendSeatRow()"><i class="bi bi-plus me-1"></i>Add seat</button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-gold" onclick="submitAmend()">Save Amendment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Toast ──────────────────────────────────────────────────────────────── -->
+<div class="tb-toast" id="tb-toast">
+    <div class="tb-toast-bar"></div>
+    <span class="tb-toast-msg" id="tb-toast-msg"></span>
+    <button class="tb-toast-close" onclick="closeToast()">×</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+'use strict';
+
+// ── State ──────────────────────────────────────────────────────────────────
+const STORE_KEY    = 'tbdemo_bookings';
+const TOKEN_KEY    = 'tb_token';
+const MAX_SEATS    = 5;
+let bookingIds     = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
+let currentUser    = null;
+const PAGE_SIZE    = 5;
+let bookingPage    = 0;
+let notifPage      = 0;
+let jwtTimer       = null;
+let eventSource    = null;
+let sseActive      = false;
+let showsCache     = [];
+let countdown      = 3;
+let selectedSeats  = []; // [{seatNumber, unitPrice}]
+
+function persistBookingIds() { localStorage.setItem(STORE_KEY, JSON.stringify(bookingIds)); }
+
+// ── HTTP ───────────────────────────────────────────────────────────────────
+async function call(method, path, body) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    const headers = {};
+    if (body) headers['Content-Type'] = 'application/json';
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    if (res.status === 401) { logout(); return; }
+    const text = await res.text();
+    if (!res.ok) throw new Error(text || res.statusText);
+    try { return text ? JSON.parse(text) : null; } catch { return text; }
+}
+
+// ── Auth ───────────────────────────────────────────────────────────────────
+function scheduleTokenRefresh(token) {
+    if (jwtTimer) clearTimeout(jwtTimer);
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const expiresInMs = payload.exp * 1000 - Date.now();
+        const delay = Math.max(expiresInMs * 0.8, 10_000);
+        jwtTimer = setTimeout(silentRefresh, delay);
+    } catch (e) { console.warn('Cannot parse token expiry', e); }
+}
+
+async function silentRefresh() {
+    try {
+        const data = await call('POST', '/auth/refresh');
+        if (data?.token) { localStorage.setItem(TOKEN_KEY, data.token); scheduleTokenRefresh(data.token); }
+    } catch { logout(); }
+}
+
+function onAuthSuccess(data) {
+    localStorage.setItem(TOKEN_KEY, data.token);
+    currentUser = { username: data.username, fullName: data.fullName, role: data.role };
+    scheduleTokenRefresh(data.token);
+    document.getElementById('nav-username').textContent = data.fullName || data.username;
+    const badge = document.getElementById('nav-role-badge');
+    badge.textContent = data.role;
+    badge.className = `tb-role-badge role-${data.role}`;
+    document.getElementById('user-info').style.display = '';
+    applyRole(data.role);
+    loadVenues();
+    initSse();
+    refresh();
+}
+
+function applyRole(role) {
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = role === 'ADMIN' ? '' : 'none');
+    if (role === 'ADMIN') { loadCustomers(); loadChaos(); }
+}
+
+async function loadCustomers() {
+    try {
+        const customers = await call('GET', '/auth/users');
+        const sel = document.getElementById('f-customer');
+        sel.innerHTML = '<option value="">Select a customer…</option>' +
+            customers.map(c => `<option value="${c.username}">${c.fullName} (${c.username})</option>`).join('');
+    } catch (e) {
+        console.warn('Could not load customers', e);
+    }
+}
+
+function logout() {
+    teardownSse();
+    if (jwtTimer) { clearTimeout(jwtTimer); jwtTimer = null; }
+    localStorage.removeItem(TOKEN_KEY);
+    currentUser = null;
+    window.location.replace('/login');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+(async function init() {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) {
+        try {
+            const res = await fetch('/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+            if (res.ok) { onAuthSuccess({ ...(await res.json()), token }); return; }
+        } catch {}
+        localStorage.removeItem(TOKEN_KEY);
+    }
+    window.location.replace('/login');
+})();
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let toastTimeout = null;
+function notify(msg, type = 'success') {
+    const el = document.getElementById('tb-toast');
+    document.getElementById('tb-toast-msg').textContent = msg;
+    el.className = `tb-toast show toast-${type}`;
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => el.classList.remove('show'), 3500);
+}
+function closeToast() { document.getElementById('tb-toast').classList.remove('show'); }
+
+// ── SSE ────────────────────────────────────────────────────────────────────
+const NOTIF_COLOURS = { TICKET_ISSUED:'success', BOOKING_CONFIRMED:'info', BOOKING_CANCELLED:'danger', PAYMENT_REFUNDED:'warning' };
+const NOTIF_ICONS   = { TICKET_ISSUED:'bi-ticket-perforated-fill', BOOKING_CONFIRMED:'bi-check-circle-fill', BOOKING_CANCELLED:'bi-x-circle-fill', PAYMENT_REFUNDED:'bi-arrow-counterclockwise' };
+
+function initSse() {
+    if (eventSource) return;
+    const cid = currentUser?.username ?? 'all';
+    eventSource = new EventSource('/proxy/notifications/stream?customerId=' + encodeURIComponent(cid));
+    sseActive = true;
+    const handleEvent = (evt) => {
+        try {
+            const n = JSON.parse(evt.data);
+            const area = document.getElementById('notifications-area');
+            let feed = area.querySelector('.notif-feed');
+            if (!feed) { area.innerHTML = '<div class="notif-feed"></div>'; feed = area.querySelector('.notif-feed'); }
+            const item = document.createElement('div');
+            item.className = `notif-item ${n.notificationType}`;
+            const colour = NOTIF_COLOURS[n.notificationType] || 'secondary';
+            const icon   = NOTIF_ICONS[n.notificationType]   || 'bi-bell-fill';
+            const ref    = n.bookingId ? 'BK-' + n.bookingId.replace(/-/g,'').substring(0,6).toUpperCase() : '';
+            item.innerHTML = `
+                <div class="notif-type" style="color:var(--accent)"><i class="bi ${icon} me-1"></i>${n.notificationType.replace(/_/g,' ')}</div>
+                <div class="notif-msg">${n.message}</div>
+                <div class="notif-meta">${ref ? `<span class="font-mono" style="font-size:.7rem">${ref}</span> · ` : ''}${timeAgo(n.sentAt)}</div>`;
+            feed.insertBefore(item, feed.firstChild);
+            notify(n.message, colour);
+        } catch (e) { console.warn('SSE parse error', e); }
+    };
+    ['BOOKING_CONFIRMED','BOOKING_CANCELLED','TICKET_ISSUED','PAYMENT_REFUNDED'].forEach(t => eventSource.addEventListener(t, handleEvent));
+    eventSource.onopen  = () => { sseActive = true;  setSseDot(true); };
+    eventSource.onerror = () => { sseActive = false; eventSource = null; setSseDot(false); };
+}
+
+function teardownSse() {
+    if (eventSource) { eventSource.close(); eventSource = null; }
+    sseActive = false; setSseDot(false);
+}
+
+function setSseDot(live) {
+    const dot   = document.getElementById('sse-dot');
+    const label = document.getElementById('sse-label');
+    if (dot)   { dot.className = 'sse-dot' + (live ? ' live' : ''); }
+    if (label) { label.textContent = live ? 'Live' : 'SSE'; }
+}
+
+// ── Health ─────────────────────────────────────────────────────────────────
+const STATUS_LABEL = { UP: 'UP', DOWN: 'DOWN', CB_OPEN: 'CB OPEN', CB_HALF: 'CB HALF' };
+async function loadHealth() {
+    try {
+        const h = await call('GET', '/proxy/health');
+        document.getElementById('health-bar').innerHTML = Object.entries(h).map(([name, status]) =>
+            `<span class="health-dot" title="${STATUS_LABEL[status] || status}"><span class="dot dot-${status}"></span>${name.replace('-service','')}</span>`
+        ).join('');
+    } catch {}
+}
+
+// ── DLQ Panel ──────────────────────────────────────────────────────────────
+async function loadDlq() {
+    const panel = document.getElementById('dlq-panel');
+    if (!panel) return;
+    try {
+        const d = await call('GET', '/proxy/dlq');
+        panel.innerHTML = Object.entries(d).map(([svc, count]) => {
+            const hasItems = count > 0;
+            const label = count < 0 ? '—' : String(count);
+            const cls = hasItems ? 'warn' : 'ok';
+            return `<div class="dlq-row"><span>${svc.replace('-service','')}</span><span class="dlq-count ${cls}">${label}</span></div>`;
+        }).join('');
+    } catch {
+        panel.innerHTML = '<div class="dlq-row"><span style="color:var(--text-muted)">Unavailable</span></div>';
+    }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function fmtDate(dt) {
+    if (!dt) return '';
+    const d = new Date(dt);
+    return d.toLocaleString(undefined, { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+function fmtDuration(min) {
+    if (!min) return '';
+    return min >= 60 ? `${Math.floor(min/60)}h ${min%60 > 0 ? (min%60)+'m' : ''}`.trim() : `${min}m`;
+}
+function timeAgo(isoStr) {
+    const s = Math.floor((Date.now() - new Date(isoStr)) / 1000);
+    if (s < 60) return `${s}s ago`;
+    if (s < 3600) return `${Math.floor(s/60)}m ago`;
+    return `${Math.floor(s/3600)}h ago`;
+}
+function bookingRef(id) { return 'BK-' + id.replace(/-/g,'').substring(0,6).toUpperCase(); }
+function priceDisplay(s) {
+    if (s.priceZones && s.priceZones.length > 0) {
+        const prices = s.priceZones.map(z => parseFloat(z.price));
+        const min = Math.min(...prices), max = Math.max(...prices);
+        return min === max ? `£${min}` : `£${min} – £${max}`;
+    }
+    return `£${s.ticketPrice}`;
+}
+function showTitle(showId) { const s = showsCache.find(s => s.showId === showId); return s ? s.title : showId.substring(0,8)+'…'; }
+function friendlyBookingStatus(s) {
+    return { INITIATED:'Awaiting Payment', CONFIRMED:'Confirmed', TICKET_ISSUED:'Ticket Issued', CANCELLED:'Cancelled' }[s] || s;
+}
+function friendlyPaymentStatus(s) {
+    return { REQUESTED:'Pending', CONFIRMED:'Paid', FAILED:'Failed', REFUNDED:'Refunded' }[s] || s;
+}
+function statusBadge(rawStatus, friendlyFn) {
+    return `<span class="status-badge status-${rawStatus}">${friendlyFn(rawStatus)}</span>`;
+}
+
+// ── Shows ──────────────────────────────────────────────────────────────────
+async function loadShows() {
+    try {
+        const res = await call('GET', '/proxy/shows');
+        showsCache = res?.content ?? (Array.isArray(res) ? res : []);
+        renderShows();
+        renderShowDropdown();
+        const showId = document.getElementById('f-show').value;
+        if (showId) { const s = showsCache.find(s => s.showId === showId); if (s) renderSeatMap(s); }
+    } catch (e) {
+        document.getElementById('shows-grid').innerHTML =
+            `<div class="col-12"><div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>${e.message}</p></div></div>`;
+    }
+}
+
+function renderShows() {
+    if (!showsCache.length) {
+        document.getElementById('shows-grid').innerHTML =
+            '<div class="col-12"><div class="empty-state"><i class="bi bi-calendar-x"></i><p>No events yet. Create one above.</p></div></div>';
+        return;
+    }
+    document.getElementById('shows-grid').innerHTML = showsCache.map(s => {
+        const cat    = s.category || 'DEFAULT';
+        const icon   = { CONCERT:'🎵', THEATRE:'🎭', SPORTS:'⚽', COMEDY:'😂', CINEMA:'🎬', FESTIVAL:'🎪' }[cat] || '🎟️';
+        const pct    = s.totalSeats > 0 ? s.availableSeats / s.totalSeats : 0;
+        const reserved = s.totalSeats - s.availableSeats;
+        const occPct = s.totalSeats > 0 ? Math.round(reserved / s.totalSeats * 100) : 0;
+        const occCls = occPct >= 90 ? 'high' : occPct >= 60 ? 'mid' : 'low';
+        const avail  = s.availableSeats === 0
+            ? `<span class="avail-chip sold-out">Sold Out</span>`
+            : pct < 0.1
+            ? `<span class="avail-chip low">⚡ ${s.availableSeats} left</span>`
+            : `<span class="avail-chip">${s.availableSeats} seats</span>`;
+        return `
+        <div class="col-sm-6 col-lg-4">
+          <div class="show-card ${s.status==='CANCELLED'?'cancelled-card':''}">
+            <div class="show-banner cat-${cat}">
+              <div class="show-banner-left">
+                <span class="cat-icon">${icon}</span>
+                <span class="cat-name">${cat}</span>
+              </div>
+              ${avail}
+            </div>
+            <div class="show-body">
+              <h5 class="show-title-text">${s.title}</h5>
+              ${s.artistName ? `<p class="show-artist">${s.artistName}</p>` : '<p class="show-artist">&nbsp;</p>'}
+              <div class="show-meta-row"><i class="bi bi-geo-alt-fill"></i>${s.venue}</div>
+              ${s.eventDate ? `<div class="show-meta-row"><i class="bi bi-calendar-event"></i>${fmtDate(s.eventDate)}</div>` : ''}
+              ${s.durationMinutes ? `<div class="show-meta-row"><i class="bi bi-clock"></i>${fmtDuration(s.durationMinutes)}</div>` : ''}
+              ${s.description ? `<div class="show-desc">${s.description}</div>` : ''}
+              <div class="mt-2">
+                <div class="d-flex justify-content-between"><span class="occ-label">Occupancy</span><span class="occ-label">${occPct}%</span></div>
+                <div class="occ-bar"><div class="occ-fill ${occCls}" style="width:${occPct}%"></div></div>
+              </div>
+            </div>
+            <div class="show-footer">
+              <span class="price-tag">${priceDisplay(s)}</span>
+              <div class="d-flex align-items-center gap-2">
+                ${statusBadge(s.status, x => x)}
+                <button class="btn-ghost" title="View seat map" onclick="openOccupancyModal(${JSON.stringify(s)})"><i class="bi bi-grid-3x3-gap"></i></button>
+                ${s.status==='ACTIVE' && currentUser?.role==='ADMIN'
+                    ? `<button class="btn-danger-soft" onclick="cancelShow('${s.showId}')"><i class="bi bi-x me-1"></i>Cancel</button>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+}
+
+function fmtEventDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
+        + ' ' + d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+}
+
+function renderShowDropdown() {
+    const sel = document.getElementById('f-show');
+    const cur = sel.value;
+    const active = showsCache.filter(s => s.status === 'ACTIVE');
+    sel.innerHTML = '<option value="">Select an event…</option>' +
+        active.map(s => {
+            const full    = s.availableSeats === 0;
+            const dateStr = s.eventDate ? ' · ' + fmtEventDate(s.eventDate) : '';
+            return `<option value="${s.showId}" data-price="${s.ticketPrice || (s.priceZones?.[0]?.price ?? '')}" ${full?'disabled':''}>` +
+                `${s.title}${s.artistName?' — '+s.artistName:''}${dateStr}  ·  ${priceDisplay(s)}${full?' (Sold Out)':''}</option>`;
+        }).join('');
+    if (cur) sel.value = cur;
+}
+
+// ── Seat Map ───────────────────────────────────────────────────────────────
+// Returns zone index (0-2) for a row label, or -1 if no zones
+function zoneIndexForRow(rowLabel, zones) {
+    if (!zones || zones.length === 0) return -1;
+    for (let i = 0; i < zones.length; i++) {
+        const from = zones[i].fromRow.toUpperCase();
+        const to   = zones[i].toRow.toUpperCase();
+        if (rowLabel >= from && rowLabel <= to) return i;
+    }
+    return -1;
+}
+
+function priceForSeat(seatId, show) {
+    if (!show.priceZones || show.priceZones.length === 0) return show.ticketPrice;
+    const row = seatId.match(/^([A-Z]+)/)?.[1];
+    const zi  = zoneIndexForRow(row, show.priceZones);
+    return zi >= 0 ? show.priceZones[zi].price : show.ticketPrice;
+}
+
+function renderSeatMap(show) {
+    const wrap  = document.getElementById('seat-map-wrap');
+    const grid  = document.getElementById('seat-grid');
+    const legEl = document.querySelector('.seat-legend');
+    if (!show) { wrap.style.display = 'none'; return; }
+
+    const taken    = new Set(show.reservedSeats || []);
+    const selSet   = new Set(selectedSeats.map(s => s.seatNumber));
+    const venue    = venuesCache.find(v => v.name === show.venue);
+    const zones    = show.priceZones || [];
+
+    function seatCls(id, rowLabel) {
+        if (taken.has(id))  return 'seat-taken';
+        if (selSet.has(id)) return 'seat-selected';
+        const zi = zoneIndexForRow(rowLabel, zones);
+        return zi >= 0 ? `seat-zone-${zi}` : 'seat-free';
+    }
+
+    let html = '';
+    if (venue) {
+        venue.rows.forEach(row => {
+            html += `<div class="seat-row">`;
+            html += `<span class="row-label">${row.label}</span>`;
+            for (let c = 1; c <= row.seats; c++) {
+                const id  = row.label + c;
+                const cls = seatCls(id, row.label);
+                const oc  = taken.has(id) ? '' : `onclick="pickSeat('${id}')"`;
+                html += `<div class="seat ${cls}" title="${id}" ${oc}>${c}</div>`;
+            }
+            html += `</div>`;
+        });
+    } else {
+        const total = show.totalSeats;
+        const cols  = total <= 20 ? 5 : total <= 50 ? 10 : 12;
+        const rows  = Math.ceil(total / cols);
+        let idx = 0;
+        for (let r = 0; r < rows; r++) {
+            const rowLabel = String.fromCharCode(65 + r);
+            html += `<div class="seat-row"><span class="row-label">${rowLabel}</span>`;
+            for (let c = 0; c < cols && idx < total; c++, idx++) {
+                const id  = rowLabel + (c + 1);
+                const cls = seatCls(id, rowLabel);
+                const oc  = taken.has(id) ? '' : `onclick="pickSeat('${id}')"`;
+                html += `<div class="seat ${cls}" title="${id}" ${oc}>${c + 1}</div>`;
+            }
+            html += `</div>`;
+        }
+    }
+    grid.innerHTML = html;
+
+    // Rebuild legend
+    const ZONE_COLORS = ['rgba(245,158,11,.22)', 'rgba(59,130,246,.18)', 'rgba(52,211,153,.18)'];
+    const ZONE_BORDERS = ['rgba(245,158,11,.55)', 'rgba(59,130,246,.45)', 'rgba(52,211,153,.45)'];
+    let legendHtml = '';
+    if (zones.length > 0) {
+        zones.forEach((z, i) => {
+            legendHtml += `<span><span class="leg-box" style="background:${ZONE_COLORS[i]};border-color:${ZONE_BORDERS[i]}"></span>${z.label} £${z.price}</span>`;
+        });
+    } else {
+        legendHtml = `<span><span class="leg-box" style="background:rgba(52,211,153,.18);border-color:rgba(52,211,153,.45)"></span>Available</span>`;
+    }
+    legendHtml += `<span><span class="leg-box" style="background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3)"></span>Taken</span>`;
+    legendHtml += `<span><span class="leg-box" style="background:var(--accent);border-color:var(--accent-hover)"></span>Selected</span>`;
+    legEl.innerHTML = legendHtml;
+
+    wrap.style.display = 'block';
+    document.getElementById('selected-seats-wrap').style.display = '';
+    updateSeatsUI();
+}
+
+function pickSeat(id) {
+    const show = showsCache.find(s => s.showId === document.getElementById('f-show').value);
+    if (!show) return;
+    const idx = selectedSeats.findIndex(s => s.seatNumber === id);
+    if (idx >= 0) {
+        // Deselect
+        selectedSeats.splice(idx, 1);
+    } else {
+        if (selectedSeats.length >= MAX_SEATS) {
+            notify(`Max ${MAX_SEATS} seats per booking`, 'warning'); return;
+        }
+        selectedSeats.push({ seatNumber: id, unitPrice: priceForSeat(id, show) });
+    }
+    updateSeatsUI();
+    renderSeatMap(show);
+}
+
+function updateSeatsUI() {
+    const chipsEl = document.getElementById('selected-seats-chips');
+    const wrapEl  = document.getElementById('selected-seats-wrap');
+    const totalEl = document.getElementById('total-wrap');
+    const amtEl   = document.getElementById('f-amount');
+    const countEl = document.getElementById('seats-count-label');
+    const btnEl   = document.getElementById('btn-confirm-booking');
+
+    wrapEl.style.display = '';
+    if (selectedSeats.length === 0) {
+        chipsEl.innerHTML = '<span style="color:var(--text-muted);font-size:.78rem;font-style:italic">Click seats on the map above…</span>';
+        totalEl.style.display = 'none';
+        amtEl.value = '';
+        countEl.textContent = `(0 / ${MAX_SEATS})`;
+        btnEl.disabled = true;
+        return;
+    }
+    chipsEl.innerHTML = selectedSeats.map(s =>
+        `<span class="selected-chip">${s.seatNumber}&nbsp;£${parseFloat(s.unitPrice).toFixed(2)}` +
+        `<button type="button" onclick="deselectSeat('${s.seatNumber}')">×</button></span>`
+    ).join('');
+    const total = selectedSeats.reduce((sum, s) => sum + parseFloat(s.unitPrice || 0), 0);
+    amtEl.value = total.toFixed(2);
+    totalEl.style.display = '';
+    countEl.textContent = `(${selectedSeats.length} / ${MAX_SEATS})`;
+    btnEl.disabled = false;
+}
+
+function deselectSeat(seatNumber) {
+    selectedSeats = selectedSeats.filter(s => s.seatNumber !== seatNumber);
+    const show = showsCache.find(s => s.showId === document.getElementById('f-show').value);
+    updateSeatsUI();
+    if (show) renderSeatMap(show);
+}
+
+document.getElementById('f-show').addEventListener('change', function() {
+    selectedSeats = [];
+    document.getElementById('selected-seats-wrap').style.display = 'none';
+    document.getElementById('total-wrap').style.display = 'none';
+    document.getElementById('f-amount').value = '';
+    document.getElementById('btn-confirm-booking').disabled = true;
+    const show = showsCache.find(s => s.showId === this.value);
+    renderSeatMap(show || null);
+});
+
+// ── Venue presets ──────────────────────────────────────────────────────────
+let venuesCache = [];
+
+async function loadVenues() {
+    try {
+        const res = await fetch('/venues.json');
+        venuesCache = await res.json();
+        const sel = document.getElementById('m-venue');
+        venuesCache.forEach(v => {
+            const total = v.rows.reduce((s, r) => s + r.seats, 0);
+            const opt   = document.createElement('option');
+            opt.value       = v.name;
+            opt.textContent = `${v.name}  (${total.toLocaleString()} seats)`;
+            opt.dataset.venueIndex = venuesCache.indexOf(v);
+            sel.appendChild(opt);
+        });
+    } catch (e) { console.warn('Could not load venues.json', e); }
+}
+
+document.getElementById('m-venue').addEventListener('change', function () {
+    const opt   = this.options[this.selectedIndex];
+    const hint  = document.getElementById('m-seats-hint');
+    const venue = venuesCache[parseInt(opt.dataset.venueIndex)];
+    if (venue) {
+        const total = venue.rows.reduce((s, r) => s + r.seats, 0);
+        document.getElementById('m-seats').value = total;
+        hint.style.display = '';
+    } else {
+        hint.style.display = 'none';
+    }
+    // Clear zones — rows differ per venue
+    document.getElementById('m-zones-list').innerHTML = '';
+    updateAddZoneBtn();
+});
+
+// ── Zone builder ───────────────────────────────────────────────────────────
+const ZONE_DEFAULTS = [
+    { label: 'VIP',      color: '#f59e0b' },
+    { label: 'Standard', color: '#3b82f6' },
+    { label: 'Economy',  color: '#34d399' },
+];
+
+function addZoneRow() {
+    const list = document.getElementById('m-zones-list');
+    const idx  = list.children.length;
+    if (idx >= 3) return;
+    const def  = ZONE_DEFAULTS[idx];
+
+    const venueOpt  = document.getElementById('m-venue').selectedOptions[0];
+    const venueIdx  = venueOpt ? parseInt(venueOpt.dataset.venueIndex) : NaN;
+    const venue     = !isNaN(venueIdx) ? venuesCache[venueIdx] : null;
+    const rowLabels = venue ? venue.rows.map(r => r.label) : null;
+
+    function rowSelect(placeholder) {
+        if (!rowLabels) {
+            return `<input class="form-control zone-row-input" placeholder="${placeholder}" title="${placeholder} row (e.g. A)"/>`;
+        }
+        const opts = rowLabels.map(l => `<option value="${l}">${l}</option>`).join('');
+        return `<select class="form-control zone-row-input" title="${placeholder} row">
+            <option value="" disabled selected>${placeholder}</option>${opts}
+        </select>`;
+    }
+
+    const row = document.createElement('div');
+    row.className = 'zone-row';
+    row.innerHTML = `
+        <span style="width:10px;height:10px;border-radius:50%;background:${def.color};flex-shrink:0"></span>
+        <input class="form-control zone-label-input" placeholder="Label (e.g. ${def.label})" value="${def.label}"/>
+        ${rowSelect('From')}
+        ${rowSelect('To')}
+        <div class="input-group zone-price-input"><span class="input-group-text">£</span><input class="form-control" type="number" step="0.01" placeholder="Price"/></div>
+        <button type="button" class="btn-ghost" style="padding:.2rem .5rem;flex-shrink:0" onclick="this.parentElement.remove(); updateAddZoneBtn(); refreshZoneOptions();">
+            <i class="bi bi-x"></i>
+        </button>`;
+    row.querySelectorAll('.zone-row-input').forEach(el => {
+        if (el.tagName === 'SELECT') el.addEventListener('change', refreshZoneOptions);
+    });
+    list.appendChild(row);
+    updateAddZoneBtn();
+    refreshZoneOptions();
+}
+
+function refreshZoneOptions() {
+    const venueOpt = document.getElementById('m-venue').selectedOptions[0];
+    const venue    = venueOpt ? venuesCache[parseInt(venueOpt.dataset.venueIndex)] : null;
+    if (!venue) return;
+
+    const allRows = venue.rows.map(r => r.label);
+    const zones   = Array.from(document.getElementById('m-zones-list').children);
+
+    // Compute claimed rows per zone (requires both From and To to be set, and From <= To)
+    const claimedByZone = zones.map(zone => {
+        const sels = zone.querySelectorAll('.zone-row-input');
+        const fi   = allRows.indexOf(sels[0].value);
+        const ti   = allRows.indexOf(sels[1].value);
+        if (fi < 0 || ti < 0 || fi > ti) return new Set();
+        return new Set(allRows.slice(fi, ti + 1));
+    });
+
+    zones.forEach((zone, zi) => {
+        const excluded = new Set();
+        claimedByZone.forEach((rows, i) => { if (i !== zi) rows.forEach(r => excluded.add(r)); });
+
+        zone.querySelectorAll('.zone-row-input').forEach((sel, si) => {
+            if (sel.tagName !== 'SELECT') return;
+            const cur         = sel.value;
+            const placeholder = si === 0 ? 'From' : 'To';
+            // If the current value is now claimed by another zone, reset it
+            const available   = allRows.filter(r => !excluded.has(r));
+            const newVal      = available.includes(cur) ? cur : '';
+            const opts = available
+                .map(r => `<option value="${r}"${r === newVal ? ' selected' : ''}>${r}</option>`)
+                .join('');
+            sel.innerHTML = `<option value="" disabled${!newVal ? ' selected' : ''}>${placeholder}</option>${opts}`;
+        });
+    });
+}
+
+// ── Date-time picker (flatpickr) ─────────────────────────────────────────────
+const eventDatePicker = flatpickr('#m-event-date', {
+    enableTime: true,
+    time_24hr: true,
+    dateFormat: 'd/m/Y H:i',
+    minDate: 'today',
+    defaultHour: 19,
+    defaultMinute: 0,
+    disableMobile: true,
+});
+
+function updateAddZoneBtn() {
+    const count     = document.getElementById('m-zones-list').children.length;
+    const venueOpt  = document.getElementById('m-venue').selectedOptions[0];
+    const hasVenue  = venueOpt && !isNaN(parseInt(venueOpt.dataset.venueIndex));
+    const btn       = document.getElementById('btn-add-zone');
+    btn.style.display = count >= 3 ? 'none' : '';
+    btn.disabled      = !hasVenue;
+    document.getElementById('m-zones-header').style.display = count > 0 ? '' : 'none';
+}
+
+function getZones() {
+    return Array.from(document.getElementById('m-zones-list').children).map(row => {
+        const rowInputs = row.querySelectorAll('.zone-row-input');
+        return {
+            label:   row.querySelector('.zone-label-input').value.trim(),
+            fromRow: rowInputs[0].value.trim().toUpperCase(),
+            toRow:   rowInputs[1].value.trim().toUpperCase(),
+            price:   parseFloat(row.querySelector('.zone-price-input input').value),
+        };
+    }).filter(z => z.label && z.fromRow && z.toRow && !isNaN(z.price));
+}
+
+document.getElementById('showModal').addEventListener('show.bs.modal', () => {
+    eventDatePicker.clear();
+    document.getElementById('m-zones-list').innerHTML = '';
+    updateAddZoneBtn();
+});
+
+document.getElementById('btn-create-show').addEventListener('click', async () => {
+    const fpDate   = eventDatePicker.selectedDates[0];
+    const rawDate  = fpDate ? flatpickr.formatDate(fpDate, 'Y-m-d\\TH:i') : null;
+    const rawPrice = parseFloat(document.getElementById('m-price').value);
+    const zones    = getZones();
+    const body = {
+        title:           document.getElementById('m-title').value,
+        venue:           document.getElementById('m-venue').value,
+        totalSeats:      parseInt(document.getElementById('m-seats').value),
+        ticketPrice:     isNaN(rawPrice) ? null : rawPrice,
+        eventDate:       rawDate ? rawDate + ':00' : null,
+        category:        document.getElementById('m-category').value || null,
+        artistName:      document.getElementById('m-artist').value || null,
+        description:     document.getElementById('m-description').value || null,
+        durationMinutes: parseInt(document.getElementById('m-duration').value) || null,
+        priceZones:      zones.length > 0 ? zones : null,
+    };
+    if (!body.title || !body.venue) return notify('Title and venue are required', 'danger');
+    if (!rawDate) return notify('Event date & time is required', 'danger');
+    if (!body.ticketPrice && (!body.priceZones || body.priceZones.length === 0))
+        return notify('Enter a flat price or at least one price zone', 'danger');
+    try {
+        await call('POST', '/proxy/shows', body);
+        bootstrap.Modal.getInstance(document.getElementById('showModal')).hide();
+        notify(`"${body.title}" created`);
+        loadShows();
+    } catch (e) { notify(e.message, 'danger'); }
+});
+
+async function cancelShow(showId) {
+    if (!confirm('Cancel this show?')) return;
+    try { await call('DELETE', `/proxy/shows/${showId}`); notify('Show cancelled', 'warning'); loadShows(); }
+    catch (e) { notify(e.message, 'danger'); }
+}
+
+// ── Booking Form ───────────────────────────────────────────────────────────
+document.getElementById('booking-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const customerId = currentUser.role === 'ADMIN'
+        ? document.getElementById('f-customer').value.trim()
+        : currentUser.username;
+    const showId = document.getElementById('f-show').value;
+    if (!showId || selectedSeats.length === 0 || !customerId)
+        return notify('Select a show, at least one seat, and a customer', 'danger');
+    const body = {
+        showId,
+        seats: selectedSeats.map(s => ({ seatNumber: s.seatNumber, unitPrice: parseFloat(s.unitPrice) })),
+        customerId
+    };
+    try {
+        const raw = await call('POST', '/proxy/bookings', body);
+        const id = typeof raw === 'string' ? raw.replace(/"/g,'') : raw;
+        bookingIds.unshift(id); persistBookingIds();
+        selectedSeats = [];
+        document.getElementById('booking-form').reset();
+        document.getElementById('seat-map-wrap').style.display = 'none';
+        document.getElementById('selected-seats-wrap').style.display = 'none';
+        document.getElementById('total-wrap').style.display = 'none';
+        document.getElementById('btn-confirm-booking').disabled = true;
+        notify(`Booking submitted — ${bookingRef(id)}`);
+        bookingPage = 0; loadBookings();
+    } catch (e) { notify(e.message, 'danger'); }
+});
+
+// ── Bookings & Payments ────────────────────────────────────────────────────
+async function loadBookings() {
+    let ids = [...bookingIds];
+    if (currentUser?.role === 'CUSTOMER') {
+        try {
+            const res  = await call('GET', `/proxy/bookings/customer/${currentUser.username}`);
+            const mine = res?.content ?? (Array.isArray(res) ? res : []);
+            if (mine.length) { ids = [...new Set([...ids, ...mine.map(b => b.bookingId)])]; bookingIds = ids; persistBookingIds(); }
+        } catch {}
+    } else {
+        try {
+            const res = await call('GET', '/proxy/bookings');
+            const all = res?.content ?? (Array.isArray(res) ? res : []);
+            if (all.length) { ids = [...new Set([...ids, ...all.map(b => b.bookingId)])]; bookingIds = ids; persistBookingIds(); }
+        } catch {}
+    }
+
+    if (!ids.length) {
+        document.getElementById('bookings-area').innerHTML =
+            '<div class="empty-state"><i class="bi bi-ticket-perforated"></i><p>No bookings yet — create one on the left.</p></div>';
+        return;
+    }
+
+    const pairs = await Promise.all(ids.map(async id => {
+        const [booking, payment] = await Promise.all([
+            call('GET', `/proxy/bookings/${id}`).catch(()=>null),
+            call('GET', `/proxy/payments/booking/${id}`).catch(()=>null)
+        ]);
+        return { id, booking, payment };
+    }));
+
+    const found    = pairs.filter(p => p.booking);
+    const staleIds = pairs.filter(p => !p.booking).map(p => p.id);
+    if (staleIds.length) { bookingIds = bookingIds.filter(id => !staleIds.includes(id)); persistBookingIds(); }
+
+    if (currentUser?.role === 'ADMIN') {
+        const issued   = found.filter(p => p.booking.status==='TICKET_ISSUED').length;
+        const cancelled= found.filter(p => p.booking.status==='CANCELLED').length;
+        const revenue  = found.filter(p => p.booking.status==='TICKET_ISSUED').reduce((s,p) => s+parseFloat(p.booking.totalAmount||0), 0);
+        document.getElementById('m-total').textContent     = found.length;
+        document.getElementById('m-issued').textContent    = issued;
+        document.getElementById('m-cancelled').textContent = cancelled;
+        document.getElementById('m-revenue').textContent   = '£' + revenue.toFixed(2);
+        document.getElementById('metrics-strip').style.display = '';
+    }
+
+    const totalPages = Math.max(1, Math.ceil(found.length / PAGE_SIZE));
+    bookingPage = Math.min(bookingPage, totalPages - 1);
+    const pageRows = found.slice(bookingPage * PAGE_SIZE, (bookingPage+1) * PAGE_SIZE);
+
+    document.getElementById('bookings-area').innerHTML = `
+        <div class="tb-card" style="overflow:hidden">
+          <div class="table-responsive">
+            <table class="bookings-table">
+              <colgroup>
+                <col class="col-ref"/><col class="col-event"/><col class="col-seats"/>
+                <col class="col-customer"/><col class="col-total"/><col class="col-status"/>
+                <col class="col-ticket"/><col class="col-payment"/><col class="col-actions"/>
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Ref</th><th>Event</th><th>Seats</th><th>Customer</th>
+                  <th>Total</th><th>Status</th><th>Ticket</th><th>Payment</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>${pageRows.length ? pageRows.map(renderRow).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:2rem;font-size:.85rem">No bookings yet.</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>
+        ${renderPager(bookingPage, totalPages, found.length, 'goBookingPage',
+            `<button class="btn-ghost" onclick="clearHistory()"><i class="bi bi-trash me-1"></i>Clear history</button>`)}`;
+}
+
+function renderRow({ id, booking, payment }) {
+    if (!booking) return `<tr><td colspan="9" style="color:var(--text-muted);font-size:.78rem;padding:1rem">${id} — loading…</td></tr>`;
+    const payCell = payment
+        ? statusBadge(payment.status, friendlyPaymentStatus)
+        : '<span style="color:var(--text-muted)">—</span>';
+    let actions = '';
+    if (payment?.status === 'REQUESTED' && currentUser?.role === 'ADMIN' && booking.status !== 'CANCELLED') {
+        actions = `<button class="btn-confirm me-1" title="Confirm payment" onclick="confirmPay('${payment.paymentId}')"><i class="bi bi-check-lg"></i></button>
+                   <button class="btn-danger-soft" title="Fail payment" onclick="failPay('${payment.paymentId}')"><i class="bi bi-x-lg"></i></button>`;
+    } else if (booking.status === 'TICKET_ISSUED' && payment?.status === 'CONFIRMED') {
+        actions = `<button class="btn-refund" title="Refund" onclick="refundPay('${payment.paymentId}')"><i class="bi bi-arrow-counterclockwise"></i></button>`;
+    } else if (booking.status === 'INITIATED') {
+        const amendBtn = `<button class="btn-ghost" title="Amend seats" onclick="openAmendModal('${id}')" style="padding:.2rem .5rem"><i class="bi bi-pencil-square"></i></button>`;
+        actions = `<span class="saga-running"><i class="bi bi-hourglass-split me-1"></i>Processing…</span> ${amendBtn}`;
+    } else if (booking.status !== 'CANCELLED' && booking.status !== 'TICKET_ISSUED') {
+        actions = `<span class="saga-running"><i class="bi bi-hourglass-split me-1"></i>Processing…</span>`;
+    }
+    const ticketCell = booking.ticketNumber
+        ? `<span class="ticket-chip"><i class="bi bi-ticket-perforated-fill"></i>${booking.ticketNumber}</span>`
+        : '<span style="color:var(--text-muted)">—</span>';
+    const seatsHtml = (booking.seats || []).map(s =>
+        `<span class="seat-chip" title="£${parseFloat(s.unitPrice).toFixed(2)}">${s.seatNumber}</span>`
+    ).join('');
+    const totalAmt = booking.totalAmount != null ? parseFloat(booking.totalAmount).toFixed(2) : '—';
+    return `<tr>
+        <td><span class="booking-ref" style="cursor:pointer" onclick="openBookingDetail('${id}')">${bookingRef(id)}</span></td>
+        <td><span class="show-title-cell">${showTitle(booking.showId)}</span></td>
+        <td><div style="display:flex;flex-wrap:wrap;gap:.2rem">${seatsHtml || '<span style="color:var(--text-muted)">—</span>'}</div></td>
+        <td style="color:var(--text-muted)">${booking.customerId}</td>
+        <td style="font-weight:600;color:var(--accent)">£${totalAmt}</td>
+        <td>${statusBadge(booking.status, friendlyBookingStatus)}</td>
+        <td>${ticketCell}</td>
+        <td>${payCell}</td>
+        <td><button class="btn-ghost" title="View detail" onclick="openBookingDetail('${id}')" style="padding:.2rem .5rem"><i class="bi bi-info-circle"></i></button>${actions ? ' ' + actions : ''}</td>
+    </tr>`;
+}
+
+async function confirmPay(paymentId) {
+    try { await call('POST', `/proxy/payments/${paymentId}/confirm`); notify('Payment confirmed'); setTimeout(loadBookings, 800); }
+    catch (e) { notify(e.message, 'danger'); }
+}
+async function failPay(paymentId) {
+    try { await call('POST', `/proxy/payments/${paymentId}/fail`); notify('Payment failed — booking cancelled', 'warning'); setTimeout(loadBookings, 800); }
+    catch (e) { notify(e.message, 'danger'); }
+}
+async function refundPay(paymentId) {
+    if (!confirm('Refund this payment?')) return;
+    try { await call('POST', `/proxy/payments/${paymentId}/refund`); notify('Payment refunded', 'warning'); setTimeout(loadBookings, 800); }
+    catch (e) { notify(e.message, 'danger'); }
+}
+function clearHistory() {
+    if (!confirm('Remove local booking history?\n(Data stays in the services.)')) return;
+    bookingIds = []; persistBookingIds(); loadBookings();
+}
+
+function renderPager(page, totalPages, totalItems, fnName, rightSlot = '') {
+    if (totalPages <= 1 && !rightSlot) return '';
+    const start = page * PAGE_SIZE + 1;
+    const end   = Math.min((page+1) * PAGE_SIZE, totalItems);
+    const nav = totalPages > 1 ? `
+        <button class="btn-ghost" ${page===0?'disabled':''} onclick="${fnName}(${page-1})"><i class="bi bi-chevron-left"></i></button>
+        <span style="font-size:.78rem;color:var(--text-muted)">${start}–${end} of ${totalItems}</span>
+        <button class="btn-ghost" ${page>=totalPages-1?'disabled':''} onclick="${fnName}(${page+1})"><i class="bi bi-chevron-right"></i></button>` : '';
+    return `<div style="display:flex;align-items:center;gap:.5rem;margin-top:.75rem">${nav}<div style="margin-left:auto">${rightSlot}</div></div>`;
+}
+
+function goBookingPage(n) { bookingPage = n; loadBookings(); }
+function goNotifPage(n)   { notifPage   = n; loadNotifications(); }
+
+// ── Notifications ──────────────────────────────────────────────────────────
+async function loadNotifications() {
+    try {
+        const items = await call('GET', '/proxy/notifications/recent');
+        const area  = document.getElementById('notifications-area');
+        if (!items?.length) {
+            area.innerHTML = '<div class="empty-state"><i class="bi bi-bell-slash"></i><p>No notifications yet.</p></div>';
+            return;
+        }
+        const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+        notifPage = Math.min(notifPage, totalPages - 1);
+        const pageItems = items.slice(notifPage * PAGE_SIZE, (notifPage+1) * PAGE_SIZE);
+        area.innerHTML = `<div class="notif-feed">` +
+            pageItems.map(n => {
+                const icon = NOTIF_ICONS[n.notificationType] || 'bi-bell-fill';
+                const ref  = n.bookingId ? 'BK-'+n.bookingId.replace(/-/g,'').substring(0,6).toUpperCase() : '';
+                return `<div class="notif-item ${n.notificationType}">
+                    <div class="notif-type" style="color:var(--accent)"><i class="bi ${icon} me-1"></i>${n.notificationType.replace(/_/g,' ')}</div>
+                    <div class="notif-msg">${n.message}</div>
+                    <div class="notif-meta">${ref?`<span class="font-mono" style="font-size:.7rem">${ref}</span> · `:''}${timeAgo(n.sentAt)}</div>
+                </div>`;
+            }).join('') + `</div>` + renderPager(notifPage, totalPages, items.length, 'goNotifPage');
+    } catch {}
+}
+
+// ── Booking Detail Modal ────────────────────────────────────────────────────
+async function openBookingDetail(bookingId) {
+    const body = document.getElementById('booking-detail-body');
+    body.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass-split"></i><p>Loading…</p></div>';
+    new bootstrap.Modal(document.getElementById('bookingDetailModal')).show();
+    try {
+        const [booking, payment, notifs] = await Promise.all([
+            call('GET', `/proxy/bookings/${bookingId}`).catch(() => null),
+            call('GET', `/proxy/payments/booking/${bookingId}`).catch(() => null),
+            call('GET', `/proxy/notifications/booking/${bookingId}`).catch(() => [])
+        ]);
+        if (!booking) { body.innerHTML = '<p style="color:var(--text-muted)">Booking not found.</p>'; return; }
+        const seatsRows = (booking.seats || []).map(s =>
+            `<tr><td class="font-mono">${s.seatNumber}</td><td style="color:var(--accent)">£${parseFloat(s.unitPrice).toFixed(2)}</td></tr>`
+        ).join('');
+        const notifRows = (Array.isArray(notifs) ? notifs : []).map(n =>
+            `<div class="notif-item ${n.notificationType}" style="margin-bottom:.5rem">
+                <div class="notif-type">${n.notificationType.replace(/_/g,' ')}</div>
+                <div class="notif-msg" style="font-size:.78rem">${n.message}</div>
+                <div class="notif-meta" style="font-size:.65rem;color:var(--text-muted)">${timeAgo(n.sentAt)}</div>
+             </div>`
+        ).join('') || '<p style="font-size:.78rem;color:var(--text-muted)">No notifications.</p>';
+        body.innerHTML = `
+            <div class="detail-section">
+                <h6><i class="bi bi-info-circle me-1"></i>Booking</h6>
+                <div class="detail-grid">
+                    <div class="detail-kv"><span class="detail-k">Reference</span><span class="detail-v font-mono">${bookingRef(bookingId)}</span></div>
+                    <div class="detail-kv"><span class="detail-k">Status</span><span class="detail-v">${statusBadge(booking.status, friendlyBookingStatus)}</span></div>
+                    <div class="detail-kv"><span class="detail-k">Show</span><span class="detail-v">${showTitle(booking.showId)}</span></div>
+                    <div class="detail-kv"><span class="detail-k">Customer</span><span class="detail-v">${booking.customerId}</span></div>
+                    <div class="detail-kv"><span class="detail-k">Total</span><span class="detail-v" style="color:var(--accent)">£${parseFloat(booking.totalAmount || 0).toFixed(2)}</span></div>
+                    ${booking.ticketNumber ? `<div class="detail-kv"><span class="detail-k">Ticket</span><span class="detail-v font-mono">${booking.ticketNumber}</span></div>` : ''}
+                </div>
+            </div>
+            <div class="detail-section">
+                <h6><i class="bi bi-grid me-1"></i>Seats</h6>
+                <table style="width:100%;font-size:.8rem"><thead><tr><th style="color:var(--text-muted);padding:.2rem .4rem">Seat</th><th style="color:var(--text-muted);padding:.2rem .4rem">Price</th></tr></thead>
+                <tbody>${seatsRows || '<tr><td colspan="2" style="color:var(--text-muted)">No seat data.</td></tr>'}</tbody></table>
+            </div>
+            ${payment ? `<div class="detail-section">
+                <h6><i class="bi bi-credit-card me-1"></i>Payment</h6>
+                <div class="detail-grid">
+                    <div class="detail-kv"><span class="detail-k">Payment ID</span><span class="detail-v font-mono" style="font-size:.7rem">${payment.paymentId}</span></div>
+                    <div class="detail-kv"><span class="detail-k">Status</span><span class="detail-v">${statusBadge(payment.status, friendlyPaymentStatus)}</span></div>
+                    <div class="detail-kv"><span class="detail-k">Amount</span><span class="detail-v" style="color:var(--accent)">£${parseFloat(payment.amount || 0).toFixed(2)}</span></div>
+                </div></div>` : ''}
+            <div class="detail-section">
+                <h6><i class="bi bi-bell me-1"></i>Notifications</h6>
+                ${notifRows}
+            </div>`;
+    } catch (e) { body.innerHTML = `<p style="color:#f87171">${e.message}</p>`; }
+}
+
+// ── Show Occupancy Modal ────────────────────────────────────────────────────
+function openOccupancyModal(show) {
+    const reserved = show.totalSeats - show.availableSeats;
+    const occPct = show.totalSeats > 0 ? Math.round(reserved / show.totalSeats * 100) : 0;
+    document.getElementById('occ-modal-title').innerHTML =
+        `<i class="bi bi-grid me-2" style="color:var(--accent)"></i>${show.title} — Seat Map`;
+    document.getElementById('occ-stats').innerHTML = `
+        <div class="col-4"><div class="metric-card"><div class="metric-val">${show.totalSeats}</div><div class="metric-lbl">Total</div></div></div>
+        <div class="col-4"><div class="metric-card" style="border-color:rgba(239,68,68,.2)"><div class="metric-val" style="color:#f87171">${reserved}</div><div class="metric-lbl">Reserved</div></div></div>
+        <div class="col-4"><div class="metric-card" style="border-color:rgba(34,197,94,.2)"><div class="metric-val" style="color:#4ade80">${show.availableSeats}</div><div class="metric-lbl">Available (${100-occPct}%)</div></div></div>`;
+
+    // Render read-only seat grid using reserved seats set
+    const reservedSet = new Set(show.reservedSeats || []);
+    const cols = Math.ceil(Math.sqrt(show.totalSeats * 1.6));
+    const rows = Math.ceil(show.totalSeats / cols);
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let html = '';
+    let seatIdx = 0;
+    for (let r = 0; r < rows && seatIdx < show.totalSeats; r++) {
+        html += `<div class="seat-row"><span class="row-label">${chars[r] || r}</span>`;
+        for (let c = 1; c <= cols && seatIdx < show.totalSeats; c++, seatIdx++) {
+            const sn = (chars[r] || r) + c;
+            const cls = reservedSet.has(sn) ? 'seat seat-taken' : 'seat seat-free';
+            html += `<button class="${cls}" disabled title="${sn}">${c}</button>`;
+        }
+        html += '</div>';
+    }
+    document.getElementById('occ-seat-grid').innerHTML = html;
+    new bootstrap.Modal(document.getElementById('occupancyModal')).show();
+}
+
+// ── Chaos Mode ─────────────────────────────────────────────────────────────
+let chaosEnabled = false;
+
+async function loadChaos() {
+    try {
+        const data = await call('GET', '/proxy/chaos');
+        chaosEnabled = data.chaosEnabled;
+        updateChaosUI();
+    } catch (_) {}
+}
+
+function updateChaosUI() {
+    const status = document.getElementById('chaos-status');
+    const icon   = document.getElementById('chaos-icon');
+    const label  = document.getElementById('chaos-btn-label');
+    if (!status) return;
+    status.textContent = chaosEnabled
+        ? `ACTIVE — ${Math.round((window._chaosRate||0.5)*100)}% of payments will randomly fail`
+        : 'Off — payments process normally';
+    status.style.color = chaosEnabled ? '#ef4444' : 'var(--text-muted)';
+    icon.className  = chaosEnabled ? 'bi bi-toggle-on me-1' : 'bi bi-toggle-off me-1';
+    label.textContent = chaosEnabled ? 'Disable' : 'Enable';
+}
+
+async function toggleChaos() {
+    try {
+        const data = await call('POST', `/proxy/chaos?enabled=${!chaosEnabled}`);
+        chaosEnabled = data.chaosEnabled;
+        window._chaosRate = data.failureRate;
+        updateChaosUI();
+        notify(chaosEnabled ? '💥 Chaos mode ON' : '✓ Chaos mode OFF',
+               chaosEnabled ? 'danger' : 'success');
+    } catch (e) { notify(e.message, 'danger'); }
+}
+
+// ── Booking Amendment ───────────────────────────────────────────────────────
+function openAmendModal(bookingId) {
+    document.getElementById('amend-booking-id').value = bookingId;
+    // Pre-populate with current seats from local store
+    const entry = bookingStore[bookingId];
+    const current = entry?.booking?.seats || [];
+    const wrap = document.getElementById('amend-seats-wrap');
+    wrap.innerHTML = '';
+    current.forEach(s => addAmendSeatRow(s.seatNumber, s.unitPrice));
+    if (!current.length) addAmendSeatRow();
+    new bootstrap.Modal(document.getElementById('amendModal')).show();
+}
+
+function addAmendSeatRow(seatNumber = '', unitPrice = '') {
+    const wrap = document.getElementById('amend-seats-wrap');
+    const row = document.createElement('div');
+    row.className = 'd-flex gap-2 mb-2 align-items-center';
+    row.innerHTML = `
+        <input type="text" class="form-control form-control-sm amend-seat"
+               placeholder="Seat (e.g. A3)" value="${seatNumber}" style="max-width:110px"/>
+        <input type="number" class="form-control form-control-sm amend-price"
+               placeholder="Price" value="${unitPrice}" step="0.01" min="0" style="max-width:100px"/>
+        <button class="btn-ghost" style="padding:.2rem .5rem" onclick="this.parentElement.remove()">
+            <i class="bi bi-x-lg"></i></button>`;
+    wrap.appendChild(row);
+}
+
+async function submitAmend() {
+    const bookingId = document.getElementById('amend-booking-id').value;
+    const seatInputs  = document.querySelectorAll('#amend-seats-wrap .amend-seat');
+    const priceInputs = document.querySelectorAll('#amend-seats-wrap .amend-price');
+    const newSeats = [];
+    for (let i = 0; i < seatInputs.length; i++) {
+        const sn = seatInputs[i].value.trim();
+        const up = parseFloat(priceInputs[i].value) || 0;
+        if (sn) newSeats.push({ seatNumber: sn, unitPrice: up.toFixed(2) });
+    }
+    if (!newSeats.length) { notify('Add at least one seat', 'warning'); return; }
+    try {
+        await call('POST', `/proxy/bookings/${bookingId}/amend`, newSeats);
+        bootstrap.Modal.getInstance(document.getElementById('amendModal')).hide();
+        notify('Amendment submitted — seats being swapped');
+        setTimeout(loadBookings, 1200);
+    } catch (e) { notify(e.message, 'danger'); }
+}
+
+// ── Event Store Inspector ───────────────────────────────────────────────────
+async function inspectEvents() {
+    const type = document.getElementById('insp-type').value;
+    const id   = document.getElementById('insp-id').value.trim();
+    const out  = document.getElementById('insp-timeline');
+    if (!id) { notify('Paste an aggregate ID first', 'warning'); return; }
+    out.innerHTML = '<span style="color:var(--text-muted);font-size:.8rem">Loading…</span>';
+    try {
+        const events = await call('GET', `/proxy/events/${type}/${id}`);
+        if (!events.length) { out.innerHTML = '<span style="color:var(--text-muted);font-size:.8rem">No events found for this ID.</span>'; return; }
+        out.innerHTML = `<div class="timeline">${events.map(e => `
+            <div class="tl-item tl-toggle" onclick="this.classList.toggle('open')">
+                <span class="tl-dot"></span>
+                <div class="tl-type">${e.eventType}</div>
+                <div class="tl-ts">#${e.sequenceNumber} · ${new Date(e.timestamp).toLocaleString()}</div>
+                <pre class="tl-payload">${JSON.stringify(e.payload, null, 2)}</pre>
+            </div>`).join('')}</div>`;
+    } catch (ex) { out.innerHTML = `<span style="color:#f87171;font-size:.8rem">${ex.message}</span>`; }
+}
+
+// ── Auto-refresh ───────────────────────────────────────────────────────────
+async function refresh() {
+    const icon = document.getElementById('refresh-icon');
+    if (icon) icon.classList.add('spin');
+    const tasks = [loadHealth(), loadShows(), loadBookings()];
+    if (currentUser?.role === 'ADMIN') { tasks.push(loadDlq()); tasks.push(loadChaos()); }
+    if (!sseActive) tasks.push(loadNotifications());
+    await Promise.allSettled(tasks);
+    if (icon) icon.classList.remove('spin');
+    countdown = 3;
+}
+
+function tickCountdown() {
+    const el = document.getElementById('refresh-countdown');
+    if (el) el.textContent = countdown;
+    if (countdown <= 0) refresh(); else countdown--;
+}
+setInterval(tickCountdown, 1000);
+</script>
+</body>
+</html>

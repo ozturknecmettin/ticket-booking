@@ -1,0 +1,130 @@
+name: Prod — Tag Release, Docker Push & Deploy
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+env:
+  REGISTRY: docker.io
+  IMAGE_PREFIX: ${{ secrets.DOCKERHUB_USERNAME }}/ticket-booking
+  AWS_REGION: eu-west-1
+  ECS_CLUSTER: ticket-booking-prod
+
+jobs:
+  extract-version:
+    name: Extract version from tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+
+    steps:
+      - name: Get version from tag
+        id: get_version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+
+  docker-build-push:
+    name: Build & Push Production Images
+    needs: extract-version
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service: [show-service, booking-service, payment-service, notification-service]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.service }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.service }}/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:latest
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:${{ needs.extract-version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-prod:
+    name: Deploy to AWS ECS (prod)
+    needs: [extract-version, docker-build-push]
+    runs-on: ubuntu-latest
+    environment: production  # Requires manual approval
+
+    strategy:
+      matrix:
+        service: [show-service, booking-service, payment-service, notification-service]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ecs/${{ matrix.service }}-task.json
+          container-name: ${{ matrix.service }}
+          image: ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:${{ needs.extract-version.outputs.version }}
+
+      - uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ matrix.service }}-prod
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+  create-github-release:
+    name: Create GitHub Release
+    needs: deploy-prod
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            CHANGES=$(git log $PREV_TAG..HEAD --oneline --no-merges)
+          else
+            CHANGES=$(git log --oneline --no-merges | head -20)
+          fi
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$CHANGES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ needs.extract-version.outputs.version }}
+          body: |
+            ## Changes in ${{ needs.extract-version.outputs.version }}
+            ${{ steps.changelog.outputs.changelog }}
+
+            ## Docker Images
+            - `${{ env.IMAGE_PREFIX }}-show-service:${{ needs.extract-version.outputs.version }}`
+            - `${{ env.IMAGE_PREFIX }}-booking-service:${{ needs.extract-version.outputs.version }}`
+            - `${{ env.IMAGE_PREFIX }}-payment-service:${{ needs.extract-version.outputs.version }}`
+            - `${{ env.IMAGE_PREFIX }}-notification-service:${{ needs.extract-version.outputs.version }}`
+          draft: false
+          prerelease: false

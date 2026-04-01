@@ -1,0 +1,77 @@
+{
+  "title": "Ticket Booking — Overview",
+  "uid": "ticket-booking-overview",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Bookings Initiated",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "blue", "value": null }] } } },
+      "targets": [{ "expr": "increase(bookings_initiated_total[1h])", "legendFormat": "last hour", "datasource": { "type": "prometheus", "uid": "prometheus" } }]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Tickets Issued",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }] } } },
+      "targets": [{ "expr": "increase(tickets_issued_total[1h])", "legendFormat": "last hour", "datasource": { "type": "prometheus", "uid": "prometheus" } }]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Bookings Cancelled",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "red", "value": null }] } } },
+      "targets": [{ "expr": "increase(bookings_cancelled_total[1h])", "legendFormat": "last hour", "datasource": { "type": "prometheus", "uid": "prometheus" } }]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Payments Confirmed",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }] } } },
+      "targets": [{ "expr": "increase(payments_confirmed_total[1h])", "legendFormat": "last hour", "datasource": { "type": "prometheus", "uid": "prometheus" } }]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Booking Funnel (rate/min)",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "options": { "legend": { "displayMode": "list" } },
+      "targets": [
+        { "expr": "rate(bookings_initiated_total[1m]) * 60", "legendFormat": "Initiated", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "expr": "rate(bookings_confirmed_total[1m]) * 60", "legendFormat": "Confirmed", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "expr": "rate(tickets_issued_total[1m]) * 60", "legendFormat": "Ticket Issued", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "expr": "rate(bookings_cancelled_total[1m]) * 60", "legendFormat": "Cancelled", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Payment Outcomes (rate/min)",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "options": { "legend": { "displayMode": "list" } },
+      "targets": [
+        { "expr": "rate(payments_confirmed_total[1m]) * 60", "legendFormat": "Confirmed", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "expr": "rate(payments_failed_total[1m]) * 60", "legendFormat": "Failed", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ]
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "JVM Heap Usage",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "options": { "legend": { "displayMode": "list" } },
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "targets": [
+        { "expr": "jvm_memory_used_bytes{area=\"heap\",job=\"booking-query-service\"}", "legendFormat": "booking-query", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "expr": "jvm_memory_used_bytes{area=\"heap\",job=\"booking-service\"}", "legendFormat": "booking", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "expr": "jvm_memory_used_bytes{area=\"heap\",job=\"payment-service\"}", "legendFormat": "payment", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ]
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "HTTP Request Rate (req/min)",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "options": { "legend": { "displayMode": "list" } },
+      "targets": [
+        { "expr": "sum by (job) (rate(http_server_requests_seconds_count[1m]) * 60)", "legendFormat": "{{job}}", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ]
+    }
+  ]
+}

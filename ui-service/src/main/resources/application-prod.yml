@@ -1,0 +1,53 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ui-service
+  thymeleaf:
+    cache: true
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:uidb}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME:ui_user}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      keepalive-time: 60000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+services:
+  show-url: ${SHOW_SERVICE_URL:http://localhost:8081}
+  booking-url: ${BOOKING_SERVICE_URL:http://localhost:8082}
+  booking-query-url: ${BOOKING_QUERY_SERVICE_URL:http://localhost:8085}
+  payment-url: ${PAYMENT_SERVICE_URL:http://localhost:8083}
+  notification-url: ${NOTIFICATION_SERVICE_URL:http://localhost:8084}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+
+app:
+  # Comma-separated list of allowed origins, e.g. https://tickets.example.com
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers
+  health:
+    circuitbreakers:
+      enabled: true

@@ -1,0 +1,89 @@
+[
+  {
+    "name": "Soho Theatre, London",
+    "rows": [
+      { "label": "A", "seats": 8  },
+      { "label": "B", "seats": 10 },
+      { "label": "C", "seats": 12 },
+      { "label": "D", "seats": 12 },
+      { "label": "E", "seats": 12 },
+      { "label": "F", "seats": 10 },
+      { "label": "G", "seats": 8  }
+    ]
+  },
+  {
+    "name": "Donmar Warehouse, London",
+    "rows": [
+      { "label": "A", "seats": 10 },
+      { "label": "B", "seats": 12 },
+      { "label": "C", "seats": 14 },
+      { "label": "D", "seats": 16 },
+      { "label": "E", "seats": 16 },
+      { "label": "F", "seats": 16 },
+      { "label": "G", "seats": 14 },
+      { "label": "H", "seats": 12 },
+      { "label": "I", "seats": 10 }
+    ]
+  },
+  {
+    "name": "Fortune Theatre, London",
+    "rows": [
+      { "label": "A", "seats": 12 },
+      { "label": "B", "seats": 14 },
+      { "label": "C", "seats": 16 },
+      { "label": "D", "seats": 18 },
+      { "label": "E", "seats": 18 },
+      { "label": "F", "seats": 18 },
+      { "label": "G", "seats": 18 },
+      { "label": "H", "seats": 16 },
+      { "label": "I", "seats": 14 },
+      { "label": "J", "seats": 14 },
+      { "label": "K", "seats": 12 },
+      { "label": "L", "seats": 12 },
+      { "label": "M", "seats": 10 }
+    ]
+  },
+  {
+    "name": "Harold Pinter Theatre, London",
+    "rows": [
+      { "label": "A", "seats": 14 },
+      { "label": "B", "seats": 16 },
+      { "label": "C", "seats": 18 },
+      { "label": "D", "seats": 20 },
+      { "label": "E", "seats": 20 },
+      { "label": "F", "seats": 20 },
+      { "label": "G", "seats": 20 },
+      { "label": "H", "seats": 20 },
+      { "label": "I", "seats": 18 },
+      { "label": "J", "seats": 18 },
+      { "label": "K", "seats": 16 },
+      { "label": "L", "seats": 16 },
+      { "label": "M", "seats": 14 },
+      { "label": "N", "seats": 14 },
+      { "label": "O", "seats": 12 }
+    ]
+  },
+  {
+    "name": "Trafalgar Theatre, London",
+    "rows": [
+      { "label": "A", "seats": 16 },
+      { "label": "B", "seats": 18 },
+      { "label": "C", "seats": 20 },
+      { "label": "D", "seats": 22 },
+      { "label": "E", "seats": 24 },
+      { "label": "F", "seats": 24 },
+      { "label": "G", "seats": 24 },
+      { "label": "H", "seats": 24 },
+      { "label": "I", "seats": 24 },
+      { "label": "J", "seats": 22 },
+      { "label": "K", "seats": 22 },
+      { "label": "L", "seats": 20 },
+      { "label": "M", "seats": 20 },
+      { "label": "N", "seats": 18 },
+      { "label": "O", "seats": 18 },
+      { "label": "P", "seats": 16 },
+      { "label": "Q", "seats": 14 },
+      { "label": "R", "seats": 12 }
+    ]
+  }
+]
